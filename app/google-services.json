@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "784682240914",
+    "firebase_url": "https://bolar-ea96c.firebaseio.com",
+    "project_id": "bolar-ea96c",
+    "storage_bucket": "bolar-ea96c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784682240914:android:ae3ac9827beebc80",
+        "android_client_info": {
+          "package_name": "com.example.admin.bolar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "784682240914-b02evaorbgrejnlkfv4ko0hpkh6fqdc6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.admin.bolar",
+            "certificate_hash": "c755025548a5bd786b1bfedc931f12604cf66a3f"
+          }
+        },
+        {
+          "client_id": "784682240914-1juj4716gjrfhg1g6lkfgmujkcfu6otj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZhh6ZzTVG7uPSCP0JWYkZgHTRo3tF5cw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784682240914-1juj4716gjrfhg1g6lkfgmujkcfu6otj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
