@@ -17,9 +17,9 @@
         <activity android:name=".companyMain.CompanyHome"></activity>
         <activity android:name=".individuallandlordmain.IndividualHome" />
         <activity android:name=".signupflow.CompanyInfo" />
-        <activity android:name=".signupflow.InitialPrompt" />
+        <activity android:name=".signupflow.APNnumber" />
         <activity android:name=".tenantmain.TenantHome" />
-        <activity android:name=".signupflow.APNnumber">
+        <activity android:name=".signupflow.InitialPrompt">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.intent.action.VIEW" />

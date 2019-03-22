@@ -68,7 +68,7 @@ public class APNnumber extends AppCompatActivity {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     handled = true;
                     apnNum = apn.getText().toString();
-                    getApnData();
+                    //getApnData();
                 }
                 return handled;
             }
@@ -79,6 +79,7 @@ public class APNnumber extends AppCompatActivity {
                 boolean handled = false;
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     handled = true;
+                    apnNum = apn.getText().toString();
                     fipsCode = fips.getText().toString();
                     getApnData();
                 }

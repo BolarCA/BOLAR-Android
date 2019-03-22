@@ -58,7 +58,7 @@ public class CompanyInfo extends AppCompatActivity {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     handled = true;
                     companyName = compName.getText().toString();
-                    storeInfo();
+                    //storeInfo();
                 }
                 return handled;
             }
@@ -70,7 +70,7 @@ public class CompanyInfo extends AppCompatActivity {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     handled = true;
                     position = pos.getText().toString();
-                    storeInfo();
+                    //storeInfo();
                 }
                 return handled;
             }
@@ -82,7 +82,7 @@ public class CompanyInfo extends AppCompatActivity {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     handled = true;
                     personalEmail = persEmail.getText().toString();
-                    storeInfo();
+                    //storeInfo();
                 }
                 return handled;
             }
@@ -93,6 +93,9 @@ public class CompanyInfo extends AppCompatActivity {
                 boolean handled = false;
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     handled = true;
+                    companyName = compName.getText().toString();
+                    position = pos.getText().toString();
+                    personalEmail = persEmail.getText().toString();
                     companyEmail = compEmail.getText().toString();
                     storeInfo();
                 }
@@ -107,7 +110,9 @@ public class CompanyInfo extends AppCompatActivity {
             Map<String, Object> companyInfo = new HashMap<>();
             Map<String, Object> overallManager = new HashMap<>();
             Map<String, Object> overallCompInfo = new HashMap<>();
+            Map<String, Object> verified = new HashMap<>();
 
+            Boolean verif = false;
             accountManager.put("Position Title", position);
             accountManager.put("Email", personalEmail);
             accountManager.put("Phone Number",user.getPhoneNumber());
@@ -117,8 +122,11 @@ public class CompanyInfo extends AppCompatActivity {
             companyInfo.put("Company Email", companyEmail);
             overallCompInfo.put("Company Info", companyInfo);
 
+            verified.put("verified", verif);
+
             db.collection(type).document(user.getUid()).set(overallManager, SetOptions.merge());
             db.collection(type).document(user.getUid()).set(overallCompInfo, SetOptions.merge());
+            db.collection(type).document(user.getUid()).set(verified, SetOptions.merge());
 
             Intent intent = new Intent(CompanyInfo.this , ConfirmationDetails.class);
             intent.putExtra("type", type);
