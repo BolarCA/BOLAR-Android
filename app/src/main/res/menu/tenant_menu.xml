@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/tenant_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        app:showAsAction="never" >
+        <menu>
+            <item
+                android:id="@+id/tenant_account_settings"
+                android:title="@string/account_settings" />
+            <item
+                android:id="@+id/tenant_bank_settings"
+                android:title="@string/bank_settings" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/tenant_application"
+        android:orderInCategory="100"
+        android:title="@string/application"
+        app:showAsAction="never" >
+        <menu>
+            <item
+                android:id="@+id/tenant_new_application"
+                android:title="@string/new_application" />
+            <item
+                android:id="@+id/tenant_pending_applications"
+                android:title="@string/pending_application" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/tenant_score_history"
+        android:orderInCategory="100"
+        android:title="@string/score_history"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/tenant_customer_support"
+        android:orderInCategory="100"
+        android:title="@string/customer_support"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/tenant_log_out"
+        android:orderInCategory="100"
+        android:title="@string/log_out"
+        app:showAsAction="never" />
+
+</menu>

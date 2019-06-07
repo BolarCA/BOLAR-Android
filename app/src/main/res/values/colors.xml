@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#4CAF50</color>
 
     <color name="material_green_50">#E8F5E9</color>
     <color name="material_green_500">#FF212121</color>
@@ -10,4 +10,16 @@
     <color name="material_green_a200">#69F0AE</color>
     <color name="material_lime_a700">#3c6c5b</color>
     <color name="material_purple_a700">#FF80CBC4</color>
+
+    <color name="fair">#80DD0000</color>
+    <color name="fairState">#DD0000</color>
+    <color name="okay">#80FF5722</color>
+    <color name="okayState">#FF5722</color>
+    <color name="good">#808BC34A</color>
+    <color name="goodState">#8BC34A</color>
+    <color name="prettyGood">#804CAF50</color>
+    <color name="prettyGoodState">#4CAF50</color>
+    <color name="awesome">#80025307</color>
+    <color name="awesomeState">#025307</color>
+
 </resources>

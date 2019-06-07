@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.admin.bolar">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -13,13 +14,21 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat">
-        <activity android:name=".companyMain.CompanyHome"></activity>
-        <activity android:name=".individuallandlordmain.IndividualHome" />
+        android:theme="@style/Theme.AppCompat.Light">
+        <activity android:name=".tenantmain.TenantStripeTest"></activity>
+        <activity android:name=".companyMain.WebviewStripeCompany" />
+        <activity android:name=".companyMain.CompanyHome" />
+        <activity android:name=".tenantmain.New_Application" />
+        <activity android:name=".ScoreBreakdown.PayHistBreakdown" />
+        <activity android:name=".ScoreBreakdown.MarksBreakdown" />
+        <activity android:name=".ScoreBreakdown.DurationBreakdown" />
+        <activity android:name=".ScoreBreakdown.AgeBreakdown" />
+        <activity android:name=".companyMain.BankSettingsCompany" />
+        <activity android:name=".signupflow.InitialPrompt" />
         <activity android:name=".signupflow.CompanyInfo" />
         <activity android:name=".signupflow.APNnumber" />
-        <activity android:name=".tenantmain.TenantHome" />
-        <activity android:name=".signupflow.InitialPrompt">
+        <activity android:name=".individuallandlordmain.IndividualHome" />
+        <activity android:name=".tenantmain.TenantHome">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.intent.action.VIEW" />
@@ -35,7 +44,7 @@
         <activity android:name=".signupflow.EmailPassword" />
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="com.codepath.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">

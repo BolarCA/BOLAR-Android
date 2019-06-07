@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".companyMain.BankSettingsCompany">
+
+    <Button
+        android:id="@+id/connectStripeComp"
+        android:layout_width="320dp"
+        android:layout_height="176dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="111dp"
+        android:text="Connect Payout Account"
+        tools:layout_editor_absoluteX="49dp"
+        tools:layout_editor_absoluteY="411dp" />
+
+    <TextView
+        android:id="@+id/textView10"
+        android:layout_width="match_parent"
+        android:layout_height="133dp"
+        android:text="You have no bank settings currently set up"
+        tools:layout_editor_absoluteX="49dp"
+        tools:layout_editor_absoluteY="58dp" />
+</RelativeLayout>

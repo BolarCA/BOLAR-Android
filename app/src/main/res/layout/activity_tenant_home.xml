@@ -6,4 +6,255 @@
     android:layout_height="match_parent"
     tools:context=".tenantmain.TenantHome">
 
+    <TextView
+        android:id="@+id/scoreFactorsText"
+        android:layout_width="411dp"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/score_progress_bar"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="-2dp"
+        android:layout_marginBottom="-10dp"
+        android:background="#32303030"
+        android:gravity="bottom"
+        android:text="Score Factors"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp" />
+
+    <ProgressBar
+        android:id="@+id/score_progress_bar"
+        style="?android:progressBarStyleHorizontal"
+        android:layout_width="175dp"
+        android:layout_height="245dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="0dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="15dp"
+        android:progress="75"
+        android:progressDrawable="@drawable/score_bar" />
+
+    <TextView
+        android:id="@+id/current_score"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_alignStart="@+id/score_progress_bar"
+        android:layout_alignTop="@+id/score_progress_bar"
+        android:layout_alignEnd="@+id/score_progress_bar"
+        android:layout_marginTop="100dp"
+        android:ems="10"
+        android:text="@string/_750"
+        android:textAlignment="center"
+        android:textColor="#5EE961"
+        android:textSize="36sp"
+        android:textStyle="bold|italic"
+        android:typeface="monospace" />
+
+    <ScrollView
+        android:id="@+id/scorefactor_scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="501dp"
+        android:layout_below="@+id/score_progress_bar"
+        android:layout_marginTop="10dp">
+
+        <LinearLayout
+            android:id="@+id/factor_linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="125dp">
+
+                <Button
+                    android:id="@+id/age_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#00FFFFFF" />
+
+                <ImageView
+                    android:id="@+id/age_ImageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="195dp"
+                    android:background="@drawable/bolar_age_smallest"
+                    android:scaleType="fitCenter" />
+
+                <TextView
+                    android:id="@+id/age_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginStart="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:background="#7969F0AE"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="@string/age_of_history"
+                    android:textAlignment="center"
+                    android:textColor="#E8EAF6"
+                    android:textSize="50sp" />
+
+                <TextView
+                    android:id="@+id/age_state_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="#1C9603"
+                    android:padding="2dp"
+                    android:text="@string/good"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="125dp">
+
+                <Button
+                    android:id="@+id/pay_hist_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#00FFFFFF" />
+
+                <ImageView
+                    android:id="@+id/payment_history_imageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="195dp"
+                    android:background="@drawable/bolarpaymenthistory"
+                    android:scaleType="fitCenter" />
+
+                <TextView
+                    android:id="@+id/payment_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginStart="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:background="#7969F0AE"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="@string/payment_history"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="50sp" />
+
+                <TextView
+                    android:id="@+id/payment_state_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:width="38dp"
+                    android:background="#1C9603"
+                    android:padding="2dp"
+                    android:text="@string/good"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="125dp">
+
+                <Button
+                    android:id="@+id/marks_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#00FFFFFF" />
+
+                <ImageView
+                    android:id="@+id/complaints_imageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="195dp"
+                    android:background="@drawable/bolarderogatorycomplaints"
+                    android:scaleType="fitCenter" />
+
+                <TextView
+                    android:id="@+id/complaints_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginStart="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:background="#7969F0AE"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="@string/derogatory_complaints"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="50sp" />
+
+                <TextView
+                    android:id="@+id/complaints_state_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:width="38dp"
+                    android:background="#1C9603"
+                    android:padding="2dp"
+                    android:text="@string/good"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="125dp">
+
+                <Button
+                    android:id="@+id/avg_stay_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#00FFFFFF" />
+
+                <ImageView
+                    android:id="@+id/time_stayed_imageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="195dp"
+                    android:background="@drawable/bolartimestayed"
+                    android:scaleType="fitCenter" />
+
+                <TextView
+                    android:id="@+id/avg_duration_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentBottom="true"
+                    android:layout_marginStart="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:background="#7969F0AE"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="@string/stay_duration"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="50sp" />
+
+                <TextView
+                    android:id="@+id/time_stayed_state_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:width="38dp"
+                    android:background="#1C9603"
+                    android:padding="2dp"
+                    android:text="@string/good"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+            </RelativeLayout>
+        </LinearLayout>
+
+    </ScrollView>
+
+
 </RelativeLayout>

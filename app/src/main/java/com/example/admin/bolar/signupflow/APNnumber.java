@@ -3,8 +3,8 @@ package com.example.admin.bolar.signupflow;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -142,6 +142,10 @@ public class APNnumber extends AppCompatActivity {
             apnObject.put("APN " + apnNum, apnData);
 
             db.collection(type).document(user.getUid()).set(apnObject, SetOptions.merge());
+
+            if(type.equals("Company")){
+                //TODO: Send email with data for verification
+            }
 
             moreApnPrompt();
 
