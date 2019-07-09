@@ -44,8 +44,10 @@ dependencies {
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
-    implementation 'com.stripe:stripe-android:8.7.0'
+    implementation 'com.stripe:stripe-android:9.2.0'
     implementation 'com.google.firebase:firebase-functions:17.0.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.5.0'
+
 
 }
 

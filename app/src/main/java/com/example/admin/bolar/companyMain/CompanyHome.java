@@ -34,26 +34,36 @@ public class CompanyHome extends AppCompatActivity {
         switch(item.getItemId()){
             case R.id.tenant_application:
                 Toast.makeText(this, "Application Menu Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_new_application:
                 Toast.makeText(this, "New Application Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_pending_applications:
                 Toast.makeText(this, "Pending Application Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_settings:
                 Toast.makeText(this, "Settings Menu Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_account_settings:
                 Toast.makeText(this, "Account Settings Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_bank_settings:
                 Toast.makeText(this, "Bank Settings Selected", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(CompanyHome.this , BankSettingsCompany.class);
                 CompanyHome.this.startActivity(intent);
+                break;
             case R.id.tenant_customer_support:
                 Toast.makeText(this, "Customer Support Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_log_out:
                 Toast.makeText(this, "Log Out Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_score_history:
                 Toast.makeText(this, "Score History Selected", Toast.LENGTH_SHORT).show();
+                break;
             default:
                 return super.onOptionsItemSelected(item);
         }
+        return true;
     }
 }

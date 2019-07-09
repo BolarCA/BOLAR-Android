@@ -15,4 +15,33 @@
         android:layout_marginStart="60dp"
         android:layout_marginTop="68dp"
         android:text="Create Customer Object" />
+
+    <Button
+        android:id="@+id/managePayments"
+        android:layout_width="274dp"
+        android:layout_height="82dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="62dp"
+        android:layout_marginTop="283dp"
+        android:text="Manage Payment Methods" />
+
+    <TextView
+        android:id="@+id/defaultCardText"
+        android:layout_width="257dp"
+        android:layout_height="37dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="66dp"
+        android:layout_marginTop="229dp" />
+
+    <Button
+        android:id="@+id/payButton"
+        android:layout_width="271dp"
+        android:layout_height="84dp"
+        android:layout_below="@+id/managePayments"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="62dp"
+        android:layout_marginTop="45dp"
+        android:text="Pay 150 to Landlord" />
 </RelativeLayout>

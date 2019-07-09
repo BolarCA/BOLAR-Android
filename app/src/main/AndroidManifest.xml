@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.1" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.admin.bolar">
@@ -15,16 +15,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light">
-        <activity android:name=".tenantmain.TenantStripeTest"></activity>
+        <activity android:name=".companyMain.BankSettingsCompany"></activity>
         <activity android:name=".companyMain.WebviewStripeCompany" />
-        <activity android:name=".companyMain.CompanyHome" />
+        <activity android:name=".signupflow.InitialPrompt" />
         <activity android:name=".tenantmain.New_Application" />
         <activity android:name=".ScoreBreakdown.PayHistBreakdown" />
         <activity android:name=".ScoreBreakdown.MarksBreakdown" />
         <activity android:name=".ScoreBreakdown.DurationBreakdown" />
         <activity android:name=".ScoreBreakdown.AgeBreakdown" />
-        <activity android:name=".companyMain.BankSettingsCompany" />
-        <activity android:name=".signupflow.InitialPrompt" />
+        <activity android:name=".tenantmain.TenantStripeTest" />
+        <activity android:name=".companyMain.CompanyHome" />
         <activity android:name=".signupflow.CompanyInfo" />
         <activity android:name=".signupflow.APNnumber" />
         <activity android:name=".individuallandlordmain.IndividualHome" />

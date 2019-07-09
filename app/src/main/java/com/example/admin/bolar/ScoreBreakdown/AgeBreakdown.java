@@ -54,10 +54,10 @@ public class AgeBreakdown extends AppCompatActivity {
             mainText.setText("Average Duration");
         }else if(factor.equals("Marks_History")){
             mainText.setText("Derogatory Marks");
-            mainImage.setImageDrawable(getResources().getDrawable(R.color.fairState));
+            //mainImage.setImageDrawable(getResources().getDrawable(R.color.fairState));
         }else if(factor.equals("Age_History")){
             mainText.setText("Your Rental History");
-            mainImage.setImageDrawable(getResources().getDrawable(R.drawable.bolar_age_smallest));
+            //mainImage.setImageDrawable(getResources().getDrawable(R.drawable.bolar_age_smallest));
         }else if(factor.equals("Payment_History")){
             mainText.setText("Your Payment History");
         }

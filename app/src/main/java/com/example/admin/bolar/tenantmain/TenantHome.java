@@ -161,92 +161,92 @@ public class TenantHome extends AppCompatActivity {
                             CurrentAvgDuration data = document.toObject(CurrentAvgDuration.class);
                             AvgDurationState.setText(data.getState());
                             if(data.getState().equals("Fair")){
-                                AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.fair));
+                                //AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.fair));
                                 AvgDurationState.setBackgroundColor(getResources().getColor(R.color.fairState));
                             }
                             if(data.getState().equals("Okay")){
-                                AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.okay));
+                                //AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.okay));
                                 AvgDurationState.setBackgroundColor(getResources().getColor(R.color.okayState));
                             }
                             if(data.getState().equals("Good")){
-                                AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.good));
+                                //AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.good));
                                 AvgDurationState.setBackgroundColor(getResources().getColor(R.color.goodState));
                             }
                             if(data.getState().equals("Pretty Good")){
-                                AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
+                                //AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
                                 AvgDurationState.setBackgroundColor(getResources().getColor(R.color.prettyGoodState));
                             }
                             if(data.getState().equals("Awesome")){
-                                AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
+                                //AvgDurationLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
                                 AvgDurationState.setBackgroundColor(getResources().getColor(R.color.awesomeState));
                             }
                         }else if(document.getId().equals("Marks")){
                             CurrentMarks data = document.toObject(CurrentMarks.class);
                             marksState.setText(data.getState());
                             if(data.getState().equals("Fair")){
-                                marksLabel.setBackgroundColor(getResources().getColor(R.color.fair));
+                                //marksLabel.setBackgroundColor(getResources().getColor(R.color.fair));
                                 marksState.setBackgroundColor(getResources().getColor(R.color.fairState));
                             }
                             if(data.getState().equals("Okay")){
-                                marksLabel.setBackgroundColor(getResources().getColor(R.color.okay));
+                                //marksLabel.setBackgroundColor(getResources().getColor(R.color.okay));
                                 marksState.setBackgroundColor(getResources().getColor(R.color.okayState));
                             }
                             if(data.getState().equals("Good")){
-                                marksLabel.setBackgroundColor(getResources().getColor(R.color.good));
+                                //marksLabel.setBackgroundColor(getResources().getColor(R.color.good));
                                 marksState.setBackgroundColor(getResources().getColor(R.color.goodState));
                             }
                             if(data.getState().equals("Pretty Good")){
-                                marksLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
+                                //marksLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
                                 marksState.setBackgroundColor(getResources().getColor(R.color.prettyGoodState));
                             }
                             if(data.getState().equals("Awesome")){
-                                marksLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
+                                //marksLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
                                 marksState.setBackgroundColor(getResources().getColor(R.color.awesomeState));
                             }
                         }else if(document.getId().equals("Overall_Age")){
                             CurrentAge data = document.toObject(CurrentAge.class);
                             ageState.setText(data.getState());
                             if(data.getState().equals("Fair")){
-                                ageLabel.setBackgroundColor(getResources().getColor(R.color.fair));
+                                //ageLabel.setBackgroundColor(getResources().getColor(R.color.fair));
                                 ageState.setBackgroundColor(getResources().getColor(R.color.fairState));
                             }
                             if(data.getState().equals("Okay")){
-                                ageLabel.setBackgroundColor(getResources().getColor(R.color.okay));
+                                //ageLabel.setBackgroundColor(getResources().getColor(R.color.okay));
                                 ageState.setBackgroundColor(getResources().getColor(R.color.okayState));
                             }
                             if(data.getState().equals("Good")){
-                                ageLabel.setBackgroundColor(getResources().getColor(R.color.good));
+                                //ageLabel.setBackgroundColor(getResources().getColor(R.color.good));
                                 ageState.setBackgroundColor(getResources().getColor(R.color.goodState));
                             }
                             if(data.getState().equals("Pretty Good")){
-                                ageLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
+                                //ageLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
                                 ageState.setBackgroundColor(getResources().getColor(R.color.prettyGoodState));
                             }
                             if(data.getState().equals("Awesome")){
-                                ageLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
+                                //ageLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
                                 ageState.setBackgroundColor(getResources().getColor(R.color.awesomeState));
                             }
                         }else if(document.getId().equals("Payment_History")){
                             CurrentPaymentHist data = document.toObject(CurrentPaymentHist.class);
                             payHistState.setText(data.getState());
                             if(data.getState().equals("Fair")){
-                                payHistLabel.setBackgroundColor(getResources().getColor(R.color.fair));
+                                //payHistLabel.setBackgroundColor(getResources().getColor(R.color.fair));
                                 payHistState.setBackgroundColor(getResources().getColor(R.color.fairState));
                             }
                             if(data.getState().equals("Okay")){
-                                payHistLabel.setBackgroundColor(getResources().getColor(R.color.okay));
+                                //payHistLabel.setBackgroundColor(getResources().getColor(R.color.okay));
                                 payHistState.setBackgroundColor(getResources().getColor(R.color.okayState));
                             }
                             if(data.getState().equals("Good")){
-                                payHistLabel.setBackgroundColor(getResources().getColor(R.color.good));
+                                //payHistLabel.setBackgroundColor(getResources().getColor(R.color.good));
                                 payHistState.setBackgroundColor(getResources().getColor(R.color.goodState));
                             }
                             if(data.getState().equals("Pretty Good")){
-                                payHistLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
+                                //payHistLabel.setBackgroundColor(getResources().getColor(R.color.prettyGood));
                                 payHistState.setBackgroundColor(getResources().getColor(R.color.prettyGoodState));
                             }
                             if(data.getState().equals("Awesome")){
-                                payHistLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
+                                //payHistLabel.setBackgroundColor(getResources().getColor(R.color.awesome));
                                 payHistState.setBackgroundColor(getResources().getColor(R.color.awesomeState));
                             }
                         }
@@ -281,28 +281,38 @@ public class TenantHome extends AppCompatActivity {
         switch(item.getItemId()){
             case R.id.tenant_application:
                 Toast.makeText(this, "Application Menu Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_new_application:
                 Toast.makeText(this, "New Application Selected", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(TenantHome.this , New_Application.class);
-                TenantHome.this.startActivity(intent);
+                //Intent intent = new Intent(TenantHome.this , TenantStripeTest.class);
+                //TenantHome.this.startActivity(intent);
+                break;
             case R.id.tenant_pending_applications:
                 Toast.makeText(this, "Pending Application Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_settings:
                 Toast.makeText(this, "Settings Menu Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_account_settings:
                 Toast.makeText(this, "Account Settings Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_bank_settings:
                 Toast.makeText(this, "Bank Settings Selected", Toast.LENGTH_SHORT).show();
                 Intent intent1 = new Intent(TenantHome.this , TenantStripeTest.class);
                 TenantHome.this.startActivity(intent1);
+                break;
             case R.id.tenant_customer_support:
                 Toast.makeText(this, "Customer Support Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_log_out:
                 Toast.makeText(this, "Log Out Selected", Toast.LENGTH_SHORT).show();
+                break;
             case R.id.tenant_score_history:
                 Toast.makeText(this, "Score History Selected", Toast.LENGTH_SHORT).show();
+                break;
             default:
                 return super.onOptionsItemSelected(item);
         }
+        return true;
     }
 }
