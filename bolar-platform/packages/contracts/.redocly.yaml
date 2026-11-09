@@ -1,0 +1,7 @@
+extends: [recommended]
+rules:
+  operation-4xx-response: off
+  no-unused-components: warn
+  operation-summary: error
+  security-defined: off
+  info-license: off

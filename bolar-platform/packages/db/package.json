@@ -1,0 +1,49 @@
+{
+  "name": "@bolar/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx seed/index.ts"
+  },
+  "scripts": {
+    "generate": "dotenv -e ../../.env -e .env -- prisma generate",
+    "validate": "dotenv -e ../../.env -e .env -- prisma validate",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint src seed",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "dotenv -e ../../.env -e .env -- vitest run",
+    "migrate:dev": "dotenv -e ../../.env -e .env -- prisma migrate dev",
+    "migrate:deploy": "dotenv -e ../../.env -e .env -- prisma migrate deploy",
+    "migrate:status": "dotenv -e ../../.env -e .env -- prisma migrate status",
+    "migrate:reset": "dotenv -e ../../.env -e .env -- prisma migrate reset --force --skip-seed",
+    "migrate:test": "dotenv -e ../../.env -e .env -- tsx scripts/migrate-test.ts",
+    "seed": "dotenv -e ../../.env -e .env -- tsx seed/index.ts",
+    "seed:demo": "dotenv -e ../../.env -e .env -- tsx seed/demo-data.ts",
+    "studio": "dotenv -e ../../.env -e .env -- prisma studio"
+  },
+  "dependencies": {
+    "@bolar/shared": "workspace:*",
+    "@prisma/client": "6.19.3"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.0",
+    "dotenv": "^17.0.0",
+    "pg": "^8.16.0",
+    "@types/pg": "^8.15.0",
+    "dotenv-cli": "^8.0.0"
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+*.log
+.env
+.env.local
+.env.*.local
+generated/
+playwright-report/
+test-results/
+blob-report/
+.storage/
+.mailsink/
+*.tsbuildinfo

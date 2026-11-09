@@ -1,0 +1,44 @@
+{
+  "name": "@bolar/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "openapi:generate": "tsx scripts/generate-openapi.ts"
+  },
+  "dependencies": {
+    "@bolar/contracts": "workspace:*",
+    "@bolar/db": "workspace:*",
+    "@bolar/integrations": "workspace:*",
+    "@bolar/shared": "workspace:*",
+    "@asteasolutions/zod-to-openapi": "^7.3.0",
+    "bullmq": "^5.56.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.6.0",
+    "jose": "^6.0.0",
+    "pino": "^9.7.0",
+    "pino-http": "^10.5.0",
+    "yaml": "^2.8.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.0",
+    "dotenv": "^17.0.0",
+    "@bolar/testing": "workspace:*"
+  }
+}

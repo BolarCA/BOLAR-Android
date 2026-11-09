@@ -1,0 +1,7 @@
+# Legal, financial, compliance and screening behaviour requires an accountable human reviewer (blueprint p300).
+/bolar-platform/packages/api/src/modules/compliance/   @bolarca
+/bolar-platform/packages/api/src/modules/screening/    @bolarca
+/bolar-platform/packages/api/src/modules/finance/      @bolarca
+/bolar-platform/packages/api/src/modules/privacy/      @bolarca
+/bolar-platform/packages/api/src/modules/legal-hold/   @bolarca
+/bolar-platform/packages/db/prisma/                    @bolarca

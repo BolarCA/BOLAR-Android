@@ -1,0 +1,15 @@
+{
+  "name": "bolar-platform",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "corepack enable && pnpm install && cp -n .env.example .env || true && sudo apt-get update && sudo apt-get install -y postgresql-client",
+  "forwardPorts": [3000, 4000, 5432, 6379, 8025, 9000, 9001],
+  "customizations": {
+    "vscode": {
+      "extensions": ["Prisma.prisma", "dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "ms-playwright.playwright"]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@bolar/workers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@bolar/api": "workspace:*",
+    "@bolar/db": "workspace:*",
+    "@bolar/integrations": "workspace:*",
+    "@bolar/shared": "workspace:*",
+    "bullmq": "^5.56.0",
+    "ioredis": "^5.6.0",
+    "pino": "^9.7.0"
+  },
+  "devDependencies": { "tsx": "^4.20.0", "typescript": "5.9.3", "vitest": "^3.2.0", "dotenv": "^17.0.0" }
+}
