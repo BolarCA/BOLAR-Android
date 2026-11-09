@@ -1,0 +1,21 @@
+{
+  "name": "summary-work-order-by-id",
+  "category": "summary",
+  "actor": "managerA",
+  "command": "Summarize work order {{workOrderA}}",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_work_order"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "Leaking kitchen tap",
+      "overdue: true",
+      "work_order:{{workOrderA}}"
+    ]
+  }
+}

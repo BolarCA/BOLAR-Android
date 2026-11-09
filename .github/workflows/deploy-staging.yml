@@ -1,0 +1,69 @@
+name: deploy-staging
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA or branch to deploy
+        required: true
+        default: master
+concurrency: { group: deploy-staging, cancel-in-progress: false }
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ inputs.ref }}" }
+      - name: Require green CI on this commit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.checks.listForRef({ owner: context.repo.owner, repo: context.repo.repo, ref: context.sha });
+            const ci = data.check_runs.find(c => c.name === 'checks');
+            if (!ci || ci.conclusion !== 'success') core.setFailed(`CI 'checks' is not green for ${context.sha}`);
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: Build and push api
+        uses: docker/build-push-action@v6
+        with: { context: bolar-platform, file: bolar-platform/infra/docker/api.Dockerfile, push: true, tags: "ghcr.io/${{ github.repository_owner }}/bolar-api:${{ github.sha }}", cache-from: type=gha, cache-to: type=gha,mode=max }
+      - name: Build and push workers
+        uses: docker/build-push-action@v6
+        with: { context: bolar-platform, file: bolar-platform/infra/docker/workers.Dockerfile, push: true, tags: "ghcr.io/${{ github.repository_owner }}/bolar-workers:${{ github.sha }}", build-contexts: "bolar-api-build=docker-image://ghcr.io/${{ github.repository_owner }}/bolar-api:${{ github.sha }}" }
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with: { context: bolar-platform, file: bolar-platform/infra/docker/web.Dockerfile, push: true, build-args: "NEXT_PUBLIC_API_BASE_URL=${{ vars.STAGING_API_BASE_URL }}", tags: "ghcr.io/${{ github.repository_owner }}/bolar-web:${{ github.sha }}", cache-from: type=gha, cache-to: type=gha,mode=max }
+      - name: Migrate and roll out
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/bolar
+            export GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
+            export IMAGE_TAG=${{ github.sha }}
+            docker compose -f docker-compose.staging.yml ps -q api | xargs -r docker inspect --format '{{index .Config.Image}}' | sed 's/.*://' > /etc/bolar/previous_tag || true
+            docker compose -f docker-compose.staging.yml pull
+            docker compose -f docker-compose.staging.yml --profile migrate run --rm migrate
+            docker compose -f docker-compose.staging.yml up -d api workers web
+            for i in $(seq 1 30); do curl -fsS http://localhost:4000/health && break || sleep 5; done
+      - name: Smoke test staging
+        run: |
+          curl -fsS "${{ vars.STAGING_API_BASE_URL }}/health" | tee health.json
+          grep -q '"status":"ok"' health.json
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/bolar && export GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
+            if [ -s /etc/bolar/previous_tag ]; then IMAGE_TAG=$(cat /etc/bolar/previous_tag) docker compose -f docker-compose.staging.yml up -d api workers web; fi

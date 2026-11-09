@@ -1,0 +1,1298 @@
+// BOLAR data model. Source of truth for transactional records (blueprint pages 13-22).
+// Invariants: every tenant-scoped table carries tenantOrgId; all money is integer cents;
+// statuses are strings validated by zod contracts in packages/contracts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Tenancy & accounts (p14) ─────────────────────────────
+
+model TenantOrg {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  plan      String   @default("pilot")
+  status    String   @default("active")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessAccounts BusinessAccount[]
+  subaccounts      Subaccount[]
+  users            UserProfile[]
+  invitations      Invitation[]
+  properties       Property[]
+  units            Unit[]
+  leases           Lease[]
+  workOrders       WorkOrder[]
+  invoices         Invoice[]
+}
+
+model BusinessAccount {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  name        String
+  kind        String   @default("property_management") // property_management | landlord | corporate_tenant
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenantOrg   TenantOrg    @relation(fields: [tenantOrgId], references: [id])
+  subaccounts Subaccount[]
+
+  @@index([tenantOrgId, status])
+}
+
+model Subaccount {
+  id                String   @id @default(cuid())
+  tenantOrgId       String
+  businessAccountId String
+  name              String
+  status            String   @default("active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenantOrg       TenantOrg       @relation(fields: [tenantOrgId], references: [id])
+  businessAccount BusinessAccount @relation(fields: [businessAccountId], references: [id])
+
+  @@index([tenantOrgId, businessAccountId])
+}
+
+model UserProfile {
+  id             String    @id @default(cuid())
+  tenantOrgId    String
+  email          String
+  name           String
+  status         String    @default("active") // invited | active | suspended | deactivated
+  passwordHash   String?
+  mfaEnabled     Boolean   @default(false)
+  mfaSecret      String?
+  isPlatform     Boolean   @default(false)
+  lastLoginAt    DateTime?
+  failedLogins   Int       @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenantOrg TenantOrg @relation(fields: [tenantOrgId], references: [id])
+  sessions  Session[]
+  roles     RoleAssignment[]
+  links     AccountLink[]
+
+  @@unique([tenantOrgId, email])
+  @@index([email])
+}
+
+model AccountLink {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  userId      String
+  provider    String // local | clerk | auth0 | supabase | google
+  providerId  String
+  createdAt   DateTime @default(now())
+
+  user UserProfile @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerId])
+  @@index([tenantOrgId, userId])
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  tenantOrgId      String
+  userId           String
+  refreshTokenHash String    @unique
+  mfaVerified      Boolean   @default(false)
+  ip               String?
+  userAgent        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+
+  user UserProfile @relation(fields: [userId], references: [id])
+
+  @@index([tenantOrgId, userId])
+  @@index([expiresAt])
+}
+
+model SupportSession {
+  id            String    @id @default(cuid())
+  tenantOrgId   String // the org being supported
+  agentUserId   String
+  reason        String
+  approvedBy    String?
+  startedAt     DateTime  @default(now())
+  endsAt        DateTime
+  endedAt       DateTime?
+
+  @@index([tenantOrgId, agentUserId])
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  email       String
+  role        String
+  scopeType   String    @default("org")
+  scopeId     String?
+  tokenHash   String    @unique
+  invitedBy   String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  tenantOrg TenantOrg @relation(fields: [tenantOrgId], references: [id])
+
+  @@index([tenantOrgId, email])
+}
+
+// ───────────────────────────── RBAC / ReBAC / sensitive access (p15) ─────────────────────────────
+
+model RoleAssignment {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  userId      String
+  role        String
+  scopeType   String // platform | org | subaccount | property | case
+  scopeId     String?
+  grantedBy   String?
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+
+  user UserProfile @relation(fields: [userId], references: [id])
+
+  @@index([tenantOrgId, userId, scopeType, scopeId])
+  @@index([tenantOrgId, role])
+  // Days 91-104: per-request role resolution filters by userId first (tenant OR platform scope); EXPLAIN showed a seq scan at 5k rows.
+  @@index([userId, revokedAt])
+}
+
+model Permission {
+  id          String @id @default(cuid())
+  key         String @unique
+  description String
+}
+
+model RelationshipEdge {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  subjectType String // user | tenant_profile | vendor_profile
+  subjectId   String
+  relation    String // owner_of | manages | tenant_of | occupant_of | represents | assigned_to | vendor_for | agency_for | member_of | bookkeeper_for
+  objectType  String
+  objectId    String
+  grantedBy   String?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantOrgId, subjectType, subjectId, relation])
+  @@index([tenantOrgId, objectType, objectId, relation])
+}
+
+model SensitiveAccessRequest {
+  id             String    @id @default(cuid())
+  tenantOrgId    String
+  actorId        String
+  resourceType   String
+  resourceId     String
+  classification String // confidential | restricted
+  purpose        String
+  justification  String
+  status         String    @default("pending") // pending | approved | denied | expired | revoked
+  approvedBy     String?
+  decidedAt      DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([tenantOrgId, actorId, resourceType, resourceId, status])
+}
+
+// ───────────────────────────── Property & units (p16) ─────────────────────────────
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  name        String
+  ownerUserId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  properties Property[]
+
+  @@index([tenantOrgId])
+}
+
+model Property {
+  id           String   @id @default(cuid())
+  tenantOrgId  String
+  portfolioId  String?
+  subaccountId String?
+  name         String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  postalCode   String
+  county       String?
+  country      String   @default("US")
+  propertyType String   @default("residential") // residential | commercial | mixed
+  status       String   @default("active") // active | inactive | onboarding | archived
+  ownerUserId  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenantOrg TenantOrg  @relation(fields: [tenantOrgId], references: [id])
+  portfolio Portfolio? @relation(fields: [portfolioId], references: [id])
+  buildings Building[]
+  units     Unit[]
+
+  @@index([tenantOrgId, status, city])
+  @@index([tenantOrgId, portfolioId])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model Building {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  propertyId  String
+  name        String?
+  floors      Int?
+  createdAt   DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id])
+  units    Unit[]
+
+  @@index([tenantOrgId, propertyId])
+}
+
+model Unit {
+  id             String   @id @default(cuid())
+  tenantOrgId    String
+  propertyId     String
+  buildingId     String?
+  unitNumber     String
+  bedrooms       Int?
+  bathrooms      Decimal? @db.Decimal(3, 1)
+  squareFeet     Int?
+  status         String   @default("vacant") // vacant | occupied | notice | make_ready | down | reserved
+  targetRentCents Int     @default(0)
+  availableFrom  DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenantOrg TenantOrg @relation(fields: [tenantOrgId], references: [id])
+  property  Property  @relation(fields: [propertyId], references: [id])
+  building  Building? @relation(fields: [buildingId], references: [id])
+  leases    Lease[]
+  history   UnitStatusHistory[]
+
+  @@unique([tenantOrgId, propertyId, unitNumber])
+  @@index([tenantOrgId, propertyId, status])
+}
+
+model UnitStatusHistory {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  unitId      String
+  fromStatus  String?
+  toStatus    String
+  changedBy   String
+  reason      String?
+  changedAt   DateTime @default(now())
+
+  unit Unit @relation(fields: [unitId], references: [id])
+
+  @@index([tenantOrgId, unitId, changedAt])
+}
+
+// ───────────────────────────── Tenant profiles & leases (p17) ─────────────────────────────
+
+model TenantProfile {
+  id             String   @id @default(cuid())
+  tenantOrgId    String
+  userId         String? // linked portal login when invited
+  displayName    String
+  email          String?
+  phone          String?
+  dateOfBirth    DateTime? // restricted
+  ssnLast4       String?   // restricted
+  classification String    @default("confidential") // base classification of the record
+  kind           String    @default("individual") // individual | corporate | occupant
+  businessAccountId String?
+  status         String    @default("prospect") // prospect | applicant | active | former | blocked
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  contacts   ContactMethod[]
+  emergency  EmergencyContact[]
+  occupants  Occupant[]
+  parties    LeaseParty[]
+
+  @@index([tenantOrgId, status])
+  @@index([tenantOrgId, email])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model ContactMethod {
+  id              String  @id @default(cuid())
+  tenantOrgId     String
+  tenantProfileId String
+  kind            String // email | phone | mail
+  value           String
+  isPrimary       Boolean @default(false)
+  verifiedAt      DateTime?
+
+  tenantProfile TenantProfile @relation(fields: [tenantProfileId], references: [id])
+
+  @@index([tenantOrgId, tenantProfileId])
+}
+
+model EmergencyContact {
+  id              String @id @default(cuid())
+  tenantOrgId     String
+  tenantProfileId String
+  name            String
+  relationship    String
+  phone           String
+
+  tenantProfile TenantProfile @relation(fields: [tenantProfileId], references: [id])
+
+  @@index([tenantOrgId, tenantProfileId])
+}
+
+model Occupant {
+  id              String   @id @default(cuid())
+  tenantOrgId     String
+  tenantProfileId String
+  name            String
+  relationship    String // spouse | child | roommate | employee | other
+  isMinor         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  tenantProfile TenantProfile @relation(fields: [tenantProfileId], references: [id])
+
+  @@index([tenantOrgId, tenantProfileId])
+}
+
+model Lease {
+  id               String   @id @default(cuid())
+  tenantOrgId      String
+  propertyId       String
+  unitId           String
+  status           String   @default("draft") // draft | review | approved | sent | signed | active | renewal | terminated | canceled
+  startDate        DateTime
+  endDate          DateTime
+  rentCents        Int
+  depositCents     Int      @default(0)
+  currentVersionId String?
+  templateKey      String?
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenantOrg TenantOrg       @relation(fields: [tenantOrgId], references: [id])
+  unit      Unit            @relation(fields: [unitId], references: [id])
+  versions  LeaseVersion[]
+  parties   LeaseParty[]
+  charges   RecurringCharge[]
+  invoices  Invoice[]
+
+  @@index([tenantOrgId, unitId, status])
+  @@index([tenantOrgId, propertyId, status])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model LeaseVersion {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  leaseId     String
+  version     Int
+  termsJson   Json
+  documentId  String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  lease Lease @relation(fields: [leaseId], references: [id])
+
+  @@unique([leaseId, version])
+  @@index([tenantOrgId, leaseId])
+}
+
+model LeaseParty {
+  id              String @id @default(cuid())
+  tenantOrgId     String
+  leaseId         String
+  tenantProfileId String
+  role            String // primary | co_tenant | guarantor | occupant | corporate_sponsor
+  signedAt        DateTime?
+
+  lease         Lease         @relation(fields: [leaseId], references: [id])
+  tenantProfile TenantProfile @relation(fields: [tenantProfileId], references: [id])
+
+  @@unique([leaseId, tenantProfileId])
+  @@index([tenantOrgId, tenantProfileId])
+}
+
+model RecurringCharge {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  leaseId     String
+  type        String // rent | parking | pet | utility | storage | fee
+  amountCents Int
+  cadence     String   @default("monthly") // monthly | weekly | one_time
+  startsOn    DateTime?
+  endsOn      DateTime?
+  accountCode String?
+
+  lease Lease @relation(fields: [leaseId], references: [id])
+
+  @@index([tenantOrgId, leaseId])
+}
+
+// ───────────────────────────── Applications & screening (p18) ─────────────────────────────
+
+model Application {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  propertyId  String
+  unitId      String?
+  applicantId String // TenantProfile id
+  status      String    @default("draft") // draft | submitted | screening | review | approved | conditionally_approved | denied | withdrawn
+  submittedAt DateTime?
+  decidedAt   DateTime?
+  decidedBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  screeningOrders ScreeningOrder[]
+  adverseActions  AdverseAction[]
+
+  @@index([tenantOrgId, propertyId, status])
+  @@index([tenantOrgId, applicantId])
+}
+
+model ScreeningOrder {
+  id            String    @id @default(cuid())
+  tenantOrgId   String
+  applicationId String
+  provider      String // mock | transunion
+  status        String    @default("pending_consent") // pending_consent | ordered | completed | failed | canceled
+  consentAt     DateTime?
+  consentDocId  String?
+  externalId    String?
+  orderedBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  application Application      @relation(fields: [applicationId], references: [id])
+  results     ScreeningResult[]
+
+  @@index([tenantOrgId, applicationId])
+}
+
+model ScreeningResult {
+  id             String  @id @default(cuid())
+  tenantOrgId    String
+  orderId        String
+  classification String  @default("restricted")
+  storageKey     String?
+  summaryJson    Json?
+  receivedAt     DateTime @default(now())
+
+  order ScreeningOrder @relation(fields: [orderId], references: [id])
+
+  @@index([tenantOrgId, orderId])
+}
+
+model AdverseAction {
+  id                  String    @id @default(cuid())
+  tenantOrgId         String
+  applicationId       String
+  stage               String    @default("pre_adverse") // pre_adverse | waiting | final | disputed | withdrawn
+  noticeId            String?
+  reasonCodes         Json      @default("[]")
+  waitingPeriodEndsAt DateTime?
+  disputeOpenedAt     DateTime?
+  approvedBy          String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantOrgId, applicationId])
+}
+
+// ───────────────────────────── Maintenance & vendors (p19) ─────────────────────────────
+
+model WorkOrder {
+  id               String    @id @default(cuid())
+  tenantOrgId      String
+  propertyId       String
+  unitId           String?
+  requesterId      String // user id of tenant/staff who requested
+  requesterKind    String    @default("tenant") // tenant | staff | inspection | system
+  title            String
+  description      String
+  category         String // plumbing | electrical | hvac | appliance | structural | pest | safety | other
+  priority         String    @default("normal") // emergency | high | normal | low
+  status           String    @default("new") // new | triaged | assigned | scheduled | in_progress | blocked | review | complete | reopened | canceled
+  assignedVendorId String?
+  assignedUserId   String?
+  entryPermission  String    @default("ask") // ask | granted | denied
+  availabilityJson Json      @default("[]")
+  slaDueAt         DateTime?
+  scheduledFor     DateTime?
+  completedAt      DateTime?
+  reopenedCount    Int       @default(0)
+  duplicateOfId    String?
+  estimateCents    Int?
+  actualCents      Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenantOrg TenantOrg        @relation(fields: [tenantOrgId], references: [id])
+  events    WorkOrderEvent[]
+  vendor    VendorProfile?   @relation(fields: [assignedVendorId], references: [id])
+
+  @@index([tenantOrgId, status, priority])
+  @@index([tenantOrgId, propertyId, status])
+  @@index([tenantOrgId, assignedVendorId])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model WorkOrderEvent {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  workOrderId String
+  eventType   String // created | status_changed | assigned | note | media_added | sla_breached | escalated | message
+  actorId     String?
+  payload     Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+
+  @@index([tenantOrgId, workOrderId, createdAt])
+}
+
+model VendorProfile {
+  id                 String    @id @default(cuid())
+  tenantOrgId        String
+  userId             String? // portal login
+  name               String
+  status             String    @default("pending") // pending | approved | suspended | archived
+  trades             Json      @default("[]") // ["plumbing","hvac"]
+  email              String?
+  phone              String?
+  insuranceExpiresAt DateTime?
+  licenseNumber      String?
+  coverageJson       Json      @default("{}") // propertyIds, regions
+  budgetLimitCents   Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  contracts  VendorContract[]
+  workOrders WorkOrder[]
+
+  @@index([tenantOrgId, status])
+}
+
+model VendorContract {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  vendorId    String
+  kind        String    @default("msa") // msa | warranty | insurance_certificate | w9
+  storageKey  String
+  documentId  String?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id])
+
+  @@index([tenantOrgId, vendorId])
+}
+
+// ───────────────────────────── Finance & ledger (p20) ─────────────────────────────
+
+model Account {
+  id          String  @id @default(cuid())
+  tenantOrgId String
+  code        String
+  name        String
+  type        String // asset | liability | equity | income | expense
+  isSystem    Boolean @default(false)
+  propertyId  String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+
+  ledgerEntries LedgerEntry[]
+
+  @@unique([tenantOrgId, code])
+  @@index([tenantOrgId, type])
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  leaseId     String
+  tenantProfileId String?
+  number      String
+  status      String    @default("draft") // draft | open | partially_paid | paid | void | overdue
+  periodStart DateTime?
+  periodEnd   DateTime?
+  dueDate     DateTime
+  totalCents  Int
+  paidCents   Int       @default(0)
+  issuedAt    DateTime?
+  voidedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenantOrg TenantOrg     @relation(fields: [tenantOrgId], references: [id])
+  lease     Lease         @relation(fields: [leaseId], references: [id])
+  lines     InvoiceLine[]
+  payments  Payment[]
+
+  @@unique([tenantOrgId, number])
+  @@index([tenantOrgId, leaseId, status])
+  @@index([tenantOrgId, dueDate, status])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model InvoiceLine {
+  id          String @id @default(cuid())
+  tenantOrgId String
+  invoiceId   String
+  description String
+  accountCode String
+  amountCents Int
+  chargeId    String?
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([tenantOrgId, invoiceId])
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  tenantOrgId    String
+  invoiceId      String
+  provider       String // mock | stripe | plaid | manual
+  method         String    @default("ach") // ach | card | check | cash | other
+  status         String    @default("pending") // pending | succeeded | failed | refunded | disputed | canceled
+  amountCents    Int
+  externalId     String?
+  idempotencyKey String?   @unique
+  failureReason  String?
+  receivedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  invoice Invoice        @relation(fields: [invoiceId], references: [id])
+  events  PaymentEvent[]
+
+  @@index([tenantOrgId, invoiceId, status])
+  @@index([provider, externalId])
+}
+
+model PaymentEvent {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  paymentId   String?
+  provider    String
+  externalEventId String
+  type        String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@unique([provider, externalEventId])
+  @@index([tenantOrgId, paymentId])
+}
+
+model JournalEntry {
+  id             String    @id @default(cuid())
+  tenantOrgId    String
+  sourceType     String // invoice | payment | adjustment | reversal | opening_balance
+  sourceId       String
+  memo           String?
+  idempotencyKey String?   @unique
+  reversalOfId   String?
+  postedBy       String?
+  postedAt       DateTime?
+  createdAt      DateTime  @default(now())
+
+  lines LedgerEntry[]
+
+  @@index([tenantOrgId, sourceType, sourceId])
+  @@index([tenantOrgId, postedAt])
+}
+
+model LedgerEntry {
+  id             String @id @default(cuid())
+  tenantOrgId    String
+  journalEntryId String
+  accountId      String
+  propertyId     String?
+  debitCents     Int    @default(0)
+  creditCents    Int    @default(0)
+  memo           String?
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id])
+  account      Account      @relation(fields: [accountId], references: [id])
+
+  @@index([tenantOrgId, accountId])
+  @@index([tenantOrgId, journalEntryId])
+}
+
+// ───────────────────────────── Documents, media, notifications, templates (p21) ─────────────────────────────
+
+model Document {
+  id               String    @id @default(cuid())
+  tenantOrgId      String
+  ownerType        String // lease | tenant_profile | property | unit | work_order | vendor | case | application | org
+  ownerId          String
+  title            String
+  classification   String    @default("internal") // public | internal | confidential | restricted
+  category         String    @default("general") // lease | id | screening_report | insurance | notice | invoice | general
+  currentVersionId String?
+  retentionPolicyId String?
+  legalHold        Boolean   @default(false)
+  createdBy        String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  versions DocumentVersion[]
+
+  @@index([tenantOrgId, ownerType, ownerId])
+  @@index([tenantOrgId, classification])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  documentId  String
+  version     Int
+  storageKey  String
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  sha256      String
+  scanStatus  String   @default("pending") // pending | clean | infected | skipped
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@unique([documentId, version])
+  @@index([tenantOrgId, documentId])
+}
+
+model MediaAsset {
+  id             String   @id @default(cuid())
+  tenantOrgId    String
+  ownerType      String // work_order | unit | property | inspection | vendor
+  ownerId        String
+  storageKey     String
+  thumbnailKey   String?
+  fileName       String
+  mimeType       String
+  sizeBytes      Int
+  classification String   @default("internal")
+  status         String   @default("uploaded") // uploading | uploaded | processed | failed
+  uploadedBy     String
+  createdAt      DateTime @default(now())
+
+  @@index([tenantOrgId, ownerType, ownerId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  channel     String // email | sms | in_app
+  recipientId String // user id
+  recipientAddress String? // redacted in logs
+  templateKey String
+  variables   Json      @default("{}")
+  status      String    @default("queued") // queued | sent | delivered | failed | suppressed
+  attempts    Int       @default(0)
+  lastError   String?
+  idempotencyKey String? @unique
+  sentAt      DateTime?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantOrgId, recipientId, status])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  tenantOrgId    String? // null = platform template
+  key            String
+  channel        String // email | sms | document | notice
+  name           String
+  riskLevel      String   @default("low") // low | high (high requires legal/manager approval)
+  jurisdiction   String?
+  currentVersion Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  versions TemplateVersion[]
+
+  @@unique([tenantOrgId, key])
+}
+
+model TemplateVersion {
+  id         String    @id @default(cuid())
+  tenantOrgId String?
+  templateId String
+  version    Int
+  subject    String?
+  body       String
+  variables  Json      @default("[]")
+  status     String    @default("draft") // draft | pending_approval | approved | rejected | retired
+  approvedBy String?
+  approvedAt DateTime?
+  createdBy  String
+  createdAt  DateTime  @default(now())
+
+  template Template @relation(fields: [templateId], references: [id])
+
+  @@unique([templateId, version])
+}
+
+// ───────────────────────────── Compliance, audit, governance (p22) ─────────────────────────────
+
+model ComplianceRule {
+  id            String    @id @default(cuid())
+  key           String
+  version       Int       @default(1)
+  jurisdiction  String // US | US-CA | US-CA-LOS_ANGELES | ...
+  domain        String // rent | deposit | screening | notice | fair_housing | soi | privacy | maintenance
+  title         String
+  description   String
+  severity      String    @default("medium") // low | medium | high | critical
+  action        String    @default("warn") // allow | warn | block | review
+  conditions    Json // declarative condition tree evaluated by the rule engine
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  status        String    @default("active") // draft | active | retired
+  sourceUrl     String?
+  approvedBy    String?
+  createdAt     DateTime  @default(now())
+
+  evaluations RuleEvaluation[]
+
+  @@unique([key, version])
+  @@index([jurisdiction, domain, status])
+}
+
+model RuleEvaluation {
+  id           String   @id @default(cuid())
+  tenantOrgId  String
+  ruleId       String
+  ruleKey      String
+  ruleVersion  Int
+  resourceType String
+  resourceId   String
+  result       String // allow | warn | block | review
+  evidenceJson Json
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  resolution   String? // accepted | remediated | overridden | dismissed
+  createdAt    DateTime @default(now())
+
+  rule ComplianceRule @relation(fields: [ruleId], references: [id])
+
+  @@index([tenantOrgId, result, createdAt])
+  @@index([tenantOrgId, resourceType, resourceId])
+}
+
+model JurisdictionOverride {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  propertyId  String
+  jurisdiction String
+  reason      String
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  @@unique([tenantOrgId, propertyId])
+}
+
+model Notice {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  kind        String // late_rent | lease_violation | entry | adverse_action | termination | general
+  templateKey String
+  recipientId String // tenant profile id
+  leaseId     String?
+  status      String    @default("draft") // draft | pending_approval | approved | sent | rejected | canceled
+  bodyDraft   String
+  variables   Json      @default("{}")
+  ruleEvaluationIds Json @default("[]")
+  approvedBy  String?
+  approvedAt  DateTime?
+  sentAt      DateTime?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantOrgId, status])
+  @@index([tenantOrgId, recipientId])
+}
+
+/// Append-only. A database trigger (migration) rejects UPDATE and DELETE.
+model AuditLog {
+  id            String   @id @default(cuid())
+  tenantOrgId   String?
+  actorId       String?
+  action        String // e.g. property.create, access.denied, lease.transition
+  resourceType  String
+  resourceId    String?
+  outcome       String   @default("allow") // allow | deny | review_required | error
+  requestId     String
+  purpose       String?
+  policyVersion String?
+  before        Json?
+  after         Json?
+  metadata      Json?
+  ip            String?
+  createdAt     DateTime @default(now())
+
+  @@index([tenantOrgId, createdAt])
+  @@index([tenantOrgId, resourceType, resourceId])
+  @@index([tenantOrgId, actorId, createdAt])
+  @@index([requestId])
+}
+
+model RetentionPolicy {
+  id             String   @id @default(cuid())
+  tenantOrgId    String? // null = platform default
+  key            String
+  name           String
+  resourceType   String // document | lease | audit_log | notification | screening_result | media
+  classification String?
+  retainDays     Int
+  disposition    String   @default("review") // delete | anonymize | archive | review
+  requiresApproval Boolean @default(true)
+  createdAt      DateTime @default(now())
+
+  @@unique([tenantOrgId, key])
+}
+
+model RetentionAssignment {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  policyId     String
+  resourceType String
+  resourceId   String
+  retainUntil  DateTime
+  state        String    @default("retained") // retained | pending_disposition | proposed | approved | disposed | held
+  proposedAt   DateTime?
+  approvedBy   String?
+  disposedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([tenantOrgId, resourceType, resourceId])
+  @@index([tenantOrgId, retainUntil, state])
+}
+
+model PrivacyRequest {
+  id              String    @id @default(cuid())
+  tenantOrgId     String
+  kind            String // access | deletion | correction | portability
+  subjectEmail    String
+  subjectProfileId String?
+  status          String    @default("received") // received | identity_verification | discovery | exception_review | approved | denied | fulfilled | closed
+  identityVerifiedAt DateTime?
+  identityMethod  String?
+  discoveryJson   Json      @default("{}")
+  exceptionsJson  Json      @default("[]")
+  decision        String?
+  decidedBy       String?
+  decidedAt       DateTime?
+  dueAt           DateTime
+  confirmationDraft String?
+  manifestJson    Json?
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantOrgId, status, dueAt])
+}
+
+model LegalHold {
+  id         String    @id @default(cuid())
+  tenantOrgId String
+  name       String
+  reason     String
+  scopeJson  Json // { propertyIds?, leaseIds?, caseIds?, userIds?, documentIds?, tenantProfileIds? }
+  status     String    @default("active") // active | released
+  approvedBy String
+  releasedBy String?
+  releasedAt DateTime?
+  createdBy  String
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantOrgId, status])
+}
+
+model Case {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  title       String
+  kind        String // eviction | dispute | compliance | agency | other
+  status      String    @default("open") // open | active | on_hold | closed
+  leaseId     String?
+  propertyId  String?
+  tenantProfileId String?
+  leadLawyerId String?
+  privileged  Boolean   @default(true)
+  deadlines   Json      @default("[]")
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantOrgId, status])
+}
+
+model AgencyRequest {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  agencyName   String
+  requesterUserId String?
+  kind         String // records | law_enforcement | inspection | subpoena
+  legalBasis   String
+  scopeJson    Json
+  status       String    @default("received") // received | legal_review | approved | denied | fulfilled | closed
+  minimizationNotes String?
+  approvedBy   String?
+  decidedAt    DateTime?
+  dueAt        DateTime?
+  exportJobId  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantOrgId, status])
+}
+
+model ExportJob {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  kind         String // evidence_packet | compliance_review | agency_request | audit | privacy
+  sourceType   String
+  sourceId     String
+  status       String    @default("requested") // requested | approved | running | complete | failed | denied
+  filtersJson  Json      @default("{}")
+  redactionJson Json     @default("{}")
+  manifestJson Json?
+  manifestSha256 String?
+  storageKey   String?
+  requestedBy  String
+  approvedBy   String?
+  completedAt  DateTime?
+  error        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantOrgId, status])
+}
+
+model SignatureEnvelope {
+  id          String    @id @default(cuid())
+  tenantOrgId String
+  provider    String // mock | docusign
+  externalId  String?
+  leaseId     String
+  leaseVersionId    String? // lease version the envelope was generated from (Day 57)
+  documentVersionId String?
+  status      String    @default("created") // created | sent | delivered | completed | declined | voided
+  recipients  Json      @default("[]")
+  lastEventId String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([tenantOrgId, leaseId])
+}
+
+// ───────────────────────────── Infrastructure tables ─────────────────────────────
+
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  tenantOrgId  String?
+  key          String
+  scope        String // route id
+  requestHash  String
+  responseCode Int?
+  responseBody Json?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@unique([scope, tenantOrgId, key])
+  @@index([expiresAt])
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  externalId  String
+  signatureOk Boolean
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, externalId])
+}
+
+model FeatureFlag {
+  id          String  @id @default(cuid())
+  tenantOrgId String? // null = global
+  key         String
+  enabled     Boolean @default(false)
+  rules       Json    @default("{}")
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantOrgId, key])
+}
+
+// ---- AI assistant (Days 61-74): tenant-scoped threads, messages, tool calls and budgets ----
+model AiThread {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  createdBy   String // user id of the actor who opened the thread
+  title       String
+  contextType String? // lease | work_order | case | document | property
+  contextId   String?
+  status      String   @default("open") // open | archived
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages  AiMessage[]
+  toolCalls AiToolCall[]
+
+  @@index([tenantOrgId, createdBy, createdAt])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model AiMessage {
+  id             String   @id @default(cuid())
+  tenantOrgId    String
+  threadId       String
+  role           String // user | assistant
+  content        String // redacted before storage; never raw PII
+  sources        Json     @default("[]") // [{type,id,label}]
+  model          String?
+  inputTokens    Int?
+  outputTokens   Int?
+  costCents      Int?
+  redactionCount Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  thread AiThread @relation(fields: [threadId], references: [id])
+
+  @@index([tenantOrgId, threadId, createdAt])
+}
+
+model AiToolCall {
+  id           String   @id @default(cuid())
+  tenantOrgId  String
+  threadId     String
+  messageId    String? // assistant message that used the result
+  tool         String
+  status       String // ok | denied | error
+  inputHash    String
+  outputHash   String?
+  inputSummary Json     @default("{}") // redacted input
+  sources      Json     @default("[]")
+  draftRef     Json? // {type:'notice', id, status, href}
+  error        String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  thread AiThread @relation(fields: [threadId], references: [id])
+
+  @@index([tenantOrgId, threadId, createdAt])
+  @@index([tenantOrgId, status, createdAt])
+  @@index([tenantOrgId, tool, createdAt])
+}
+
+model AiBudget {
+  id                String   @id @default(cuid())
+  tenantOrgId       String   @unique
+  monthlyLimitCents Int
+  spentCents        Int      @default(0)
+  commandCount      Int      @default(0)
+  period            String // YYYY-MM; lazily reset when the month changes
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ───────────────────────────── Reporting and analytics (Days 75-90) ─────────────────────────────
+// KPI data lives in materialized views (rpt_*; see migrations/*_reporting_views). These two models hold the
+// scheduled report definitions and the export runs they produce.
+
+model ReportDefinition {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  name         String
+  kind         String // rent_roll | ar_aging | occupancy | maintenance_sla | collections | compliance_hits
+  filtersJson  Json      @default("{}")
+  /// Property scope captured at creation for non-staff creators (landlords); null = whole org.
+  scopeJson    Json?
+  scheduleCron String?
+  recipients   Json      @default("[]")
+  format       String    @default("csv") // csv | json
+  status       String    @default("active") // active | paused
+  createdBy    String
+  lastRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  runs ReportRun[]
+
+  @@index([tenantOrgId, status])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model ReportRun {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  definitionId String
+  status       String    @default("requested") // requested | running | complete | failed
+  format       String
+  trigger      String    @default("manual") // manual | schedule | seed
+  rowCount     Int?
+  storageKey   String?
+  sha256       String?
+  error        String?
+  requestedBy  String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  definition ReportDefinition @relation(fields: [definitionId], references: [id])
+
+  @@index([tenantOrgId, definitionId, createdAt])
+  @@index([tenantOrgId, status])
+  @@index([tenantOrgId, createdAt, id])
+}

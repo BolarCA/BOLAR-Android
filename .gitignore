@@ -8,3 +8,7 @@
 /build
 /captures
 .externalNativeBuild
+
+# Claude Code worktrees and local state
+.claude/
+.turbo/

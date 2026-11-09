@@ -1,0 +1,15 @@
+{
+  "name": "denied-vendor-no-ai-use",
+  "category": "denied",
+  "actor": "vendorA",
+  "command": "Summarize this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "notes": "Vendor role has no ai:use; the route permission gate refuses before any provider call.",
+  "expect": {
+    "httpStatus": 403,
+    "errorCode": "forbidden"
+  }
+}

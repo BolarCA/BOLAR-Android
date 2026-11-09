@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+/* BOLAR design tokens (blueprint p36): navy / cobalt / teal / violet / orange, high contrast. */
+@theme {
+  --color-navy-50: #eef2f9;
+  --color-navy-100: #d5deef;
+  --color-navy-200: #aebddf;
+  --color-navy-500: #28467a;
+  --color-navy-700: #152c55;
+  --color-navy-900: #0b1f3a;
+  --color-cobalt-100: #dfe7fd;
+  --color-cobalt-500: #1e4ed8;
+  --color-cobalt-600: #1a3fb0;
+  --color-cobalt-700: #16358f;
+  --color-teal-100: #d7f3ee;
+  --color-teal-500: #0f9d8a;
+  --color-teal-700: #0a6e61;
+  --color-violet-100: #e6e0ff;
+  --color-violet-500: #6d4aff;
+  --color-violet-700: #4c2fd1;
+  --color-orange-100: #fde7d6;
+  --color-orange-500: #f2781c;
+  --color-orange-700: #b9540d;
+  --color-orange-900: #6f3208;
+  --color-danger-100: #fde2e2;
+  --color-danger-600: #b42318;
+  --color-success-100: #dcf5e7;
+  --color-success-700: #107a4a;
+  --color-surface: #ffffff;
+  --color-canvas: #f5f7fb;
+  --color-ink: #0f172a;
+  --color-muted: #5b6b86;
+  --color-line: #dbe2ee;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --radius-card: 14px;
+}
+
+:root { color-scheme: light; }
+html, body { height: 100%; }
+body { @apply bg-canvas text-ink antialiased; }
+*:focus-visible { outline: 3px solid var(--color-cobalt-500); outline-offset: 2px; border-radius: 6px; }
+.skip-link { position: absolute; left: -9999px; top: 8px; z-index: 100; }
+.skip-link:focus { left: 8px; @apply bg-surface px-3 py-2 rounded shadow; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

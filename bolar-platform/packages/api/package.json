@@ -1,0 +1,49 @@
+{
+  "name": "@bolar/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "openapi:generate": "tsx scripts/generate-openapi.ts"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@bolar/contracts": "workspace:*",
+    "@bolar/db": "workspace:*",
+    "@bolar/integrations": "workspace:*",
+    "@bolar/shared": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.301.0",
+    "@opentelemetry/instrumentation-http": "^0.301.0",
+    "@opentelemetry/sdk-node": "^0.301.0",
+    "@sentry/node": "^11.11.0",
+    "bullmq": "^5.56.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.6.0",
+    "jose": "^6.0.0",
+    "pino": "^9.7.0",
+    "pino-http": "^10.5.0",
+    "yaml": "^2.8.0",
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "@bolar/testing": "workspace:*",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/supertest": "^6.0.3",
+    "dotenv": "^17.0.0",
+    "supertest": "^7.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

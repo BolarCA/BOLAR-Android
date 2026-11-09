@@ -1,0 +1,120 @@
+name: UAT defect
+description: A deviation found while running a UAT script (bolar-platform/docs/uat). Synthetic data only.
+title: "[UAT] <persona> step <n>: <short description>"
+labels: ["uat", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill this in during the session. Severity definitions and the fix SLA are in
+        `bolar-platform/docs/uat/defect-triage.md`. Never paste personal data, passwords or tokens; reference records
+        by id and use the request id from the error toast. Screenshots must show seed data only.
+  - type: dropdown
+    id: persona
+    attributes:
+      label: Persona and script
+      options:
+        - platform-admin
+        - org-admin
+        - property-manager
+        - landlord
+        - tenant
+        - bookkeeper
+        - lawyer
+        - vendor
+        - compliance-officer
+        - government
+        - corporate-admin
+        - occupant
+    validations:
+      required: true
+  - type: input
+    id: step
+    attributes:
+      label: Script step
+      description: Step number from the persona script (for example A12 or 7).
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity (tester's assessment; triage confirms)
+      options:
+        - S1 Critical - data exposure, money wrong, regulated step bypassed, portal unusable
+        - S2 High - journey cannot be completed, no workaround
+        - S3 Medium - workaround exists, non-critical defect, misleading state
+        - S4 Low - cosmetic or wording
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Build commit
+      description: From bolar-platform/docs/uat/last-run.md ("Commit").
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - staging
+        - local
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: Copy the Expected result column from the script.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed result
+      description: What happened, including exact on-screen text.
+    validations:
+      required: true
+  - type: input
+    id: request_id
+    attributes:
+      label: Request id
+      description: From the error toast or the X-Request-Id response header, when there was an error.
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Only if they differ from the script steps.
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module (best guess)
+      options:
+        - iam
+        - property
+        - tenancy and lease
+        - maintenance
+        - finance
+        - compliance and screening
+        - documents and notifications
+        - governance (privacy, legal hold, exports)
+        - portals and navigation
+        - platform control plane
+        - unknown
+  - type: checkboxes
+    id: regulated
+    attributes:
+      label: Regulated path
+      options:
+        - label: This defect touches an approval in docs/human-approval-map.md (approval skipped or approver equals requester) - launch blocking regardless of severity
+        - label: This defect shows data from another organization or another user - launch blocking regardless of severity
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Hygiene
+      options:
+        - label: Screenshots and text contain seed data only (no real names, emails, SSN digits, tokens)
+          required: true
+        - label: I searched open `uat` issues for this persona and step before filing
+          required: true

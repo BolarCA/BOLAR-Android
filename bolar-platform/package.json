@@ -1,0 +1,78 @@
+{
+  "name": "bolar-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "BOLAR AI property management platform - modular monolith monorepo",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @bolar/api dev",
+    "dev:web": "pnpm --filter @bolar/web dev",
+    "dev:workers": "pnpm --filter @bolar/workers dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:db": "pnpm --filter @bolar/db test",
+    "test:api": "pnpm --filter @bolar/api test",
+    "test:contracts": "pnpm --filter @bolar/integrations test",
+    "test:tenant-isolation": "pnpm --filter @bolar/api test -- tenant-isolation",
+    "e2e": "playwright test --config tests/playwright.config.ts",
+    "e2e:smoke": "playwright test --config tests/playwright.config.ts --grep @smoke",
+    "a11y:smoke": "playwright test --config tests/playwright.config.ts --grep @a11y",
+    "env:check": "tsx scripts/env-check.ts",
+    "db:up": "docker compose up -d postgres redis minio mailhog",
+    "db:migrate": "pnpm --filter @bolar/db migrate:deploy",
+    "db:migrate:dev": "pnpm --filter @bolar/db migrate:dev",
+    "db:migrate:test": "pnpm --filter @bolar/db migrate:test",
+    "db:reset": "pnpm --filter @bolar/db migrate:reset",
+    "db:seed": "pnpm --filter @bolar/db seed",
+    "db:seed:demo": "pnpm --filter @bolar/db seed:demo",
+    "prisma:generate": "pnpm --filter @bolar/db generate",
+    "prisma:validate": "pnpm --filter @bolar/db validate",
+    "prisma:migrate:status": "pnpm --filter @bolar/db migrate:status",
+    "openapi:generate": "pnpm --filter @bolar/api openapi:generate",
+    "openapi:lint": "pnpm --filter @bolar/contracts lint",
+    "openapi:check": "pnpm openapi:generate && git diff --exit-code -- packages/contracts/openapi.yaml",
+    "docs:lint": "tsx scripts/docs-lint.ts",
+    "format": "prettier --write \"**/*.{ts,tsx,md,yml,yaml,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,yml,yaml,json}\""
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@axe-core/playwright": "^4.10.0",
+    "@types/node": "^22.15.0",
+    "eslint": "^9.30.0",
+    "typescript-eslint": "^8.40.0",
+    "@eslint/js": "^9.30.0",
+    "eslint-config-prettier": "^10.1.0",
+    "prettier": "^3.6.0",
+    "tsx": "^4.20.0",
+    "turbo": "^2.5.0",
+    "typescript": "5.9.3",
+    "vitest": "^4.1.0",
+    "dotenv": "^17.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "msgpackr-extract",
+      "core-js",
+      "sharp",
+      "@tailwindcss/oxide",
+      "unrs-resolver"
+    ],
+    "overrides": {
+      "postcss": ">=8.5.18",
+      "deepmerge-ts": ">=8.0.0",
+      "@faker-js/faker": ">=10.5.0",
+      "tinypool": ">=2.1.2"
+    }
+  }
+}

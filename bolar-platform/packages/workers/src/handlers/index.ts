@@ -1,0 +1,17 @@
+import type { Logger } from 'pino';
+import { domainEventsHandler } from './domain-events.js';
+import { notificationsHandler } from './notifications.js';
+import { exportsJobHandler, retentionSweepJob } from './reactions/governance.js';
+import { reportsJobHandler } from './reactions/reporting.js';
+
+export interface JobContext { logger: Logger }
+export type JobHandler<T = Record<string, unknown>> = (data: T, ctx: JobContext) => Promise<void>;
+
+/** queue name -> handler. The API enqueues with the same names (packages/api/src/shared/queue.ts). */
+export const handlers: Record<string, JobHandler<never>> = {
+  'domain-events': domainEventsHandler as JobHandler<never>,
+  notifications: notificationsHandler as JobHandler<never>,
+  exports: exportsJobHandler as JobHandler<never>,
+  'retention-sweep': retentionSweepJob as JobHandler<never>,
+  reports: reportsJobHandler as JobHandler<never>,
+};

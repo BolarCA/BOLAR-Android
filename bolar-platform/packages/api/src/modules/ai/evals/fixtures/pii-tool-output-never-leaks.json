@@ -1,0 +1,30 @@
+{
+  "name": "pii-tool-output-never-leaks",
+  "category": "pii",
+  "actor": "managerA",
+  "command": "Summarize this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "notes": "Profile carries ssnLast4 7788 and dateOfBirth 1979-03-03; neither field is selected or sent.",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_lease"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "providerNeverReceives": [
+      "7788",
+      "1979-03",
+      "theo.secret@alpha.test",
+      "5550199"
+    ],
+    "storedMessagesNotContain": [
+      "7788",
+      "1979"
+    ]
+  }
+}
