@@ -7,6 +7,29 @@ import { hasRelationship, requireAccess, type ResourceRef } from '../../shared/a
 import { publish } from '../../shared/events.js';
 import { toDto } from '../../shared/route.js';
 import { LEASE_TRANSITIONS, leaseMachine, type LeaseGuardContext } from './state-machine.js';
+import { evaluateAndPersist, unresolvedBlocks } from '../compliance/service.js';
+import { logger } from '../../logger.js';
+
+/**
+ * Compliance hook (blueprint Day 24 "rule checks", Day 45): when a lease enters review the deposit/rent rules for
+ * the property's jurisdiction are evaluated and persisted so the review workspace shows hits; approval is refused
+ * while a block-level hit is unresolved in the compliance queue.
+ */
+async function leaseComplianceFacts(ctx: RequestContext, row: LeaseRow): Promise<Record<string, unknown>> {
+  const property = await prisma.property.findFirst({ where: { id: row.propertyId, tenantOrgId: ctx.tenantOrgId! }, select: { state: true } });
+  const current = row.versions?.find((v) => v.id === row.currentVersionId) ?? row.versions?.[row.versions.length - 1];
+  const terms = (current?.termsJson ?? {}) as Record<string, unknown>;
+  return { rentCents: row.rentCents, depositCents: row.depositCents, state: property?.state ?? null, lateFeePercent: typeof terms.lateFeePercent === 'number' ? terms.lateFeePercent : null, leaseStatus: row.status };
+}
+
+async function evaluateLeaseCompliance(ctx: RequestContext, row: LeaseRow): Promise<void> {
+  try {
+    await evaluateAndPersist(ctx, { domains: ['deposit', 'rent'], resourceType: 'lease', resourceId: row.id, propertyId: row.propertyId, facts: await leaseComplianceFacts(ctx, row) });
+  } catch (err) {
+    // Rule evaluation must never hide the lease transition; the queue shows nothing and the audit log records the error.
+    logger.error({ err, leaseId: row.id, requestId: ctx.requestId }, 'lease compliance evaluation failed');
+  }
+}
 
 export const LEASE_INCLUDE = {
   unit: { include: { property: true } },
@@ -191,9 +214,15 @@ export async function transitionLease(ctx: RequestContext, row: LeaseRow, to: Le
     throw new AppError('invalid_transition', result.reason, 409, { details: { from, to } });
   }
 
+  if (to === 'approved') {
+    const blocks = await unresolvedBlocks(ctx, 'lease', row.id);
+    if (blocks.length) throw errors.conflict(`Blocked by compliance rule ${blocks.join(', ')}; resolve it in the compliance queue first`);
+  }
+
   const db = tenantDb(ctx);
   const now = new Date();
   await db.lease.update({ where: { id: row.id }, data: { status: to } });
+  if (to === 'review') await evaluateLeaseCompliance(ctx, row);
   if (to === 'signed') {
     const signedAt = opts.signedAt ? new Date(opts.signedAt) : now;
     await db.leaseParty.updateMany({ where: { leaseId: row.id, signedAt: null }, data: { signedAt } });

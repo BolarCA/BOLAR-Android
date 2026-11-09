@@ -9,32 +9,59 @@ servers:
     description: local
 tags:
   - name: audit
+    description: Append-only audit log queries
   - name: auth
+    description: Sessions, MFA and the current actor
   - name: compliance
+    description: Policy-as-code rules, jurisdiction resolution and the review queue
   - name: document
+    description: Classified documents and versions with signed URLs
   - name: finance
+    description: Chart of accounts, ledger, invoices, payments and bank links
   - name: health
+    description: Liveness and dependency checks
   - name: iam
+    description: Users, invitations, scoped roles, relationships and access checks
   - name: integrations
+    description: Inbound provider webhooks
   - name: lease
+    description: Lease drafts, versions, parties, charges and lifecycle
   - name: legal
+    description: Cases and agency or law-enforcement requests
   - name: legal-hold
+    description: Legal holds and hold checks
   - name: maintenance
+    description: Maintenance requests and work orders
   - name: media
+    description: Photos and videos attached to operations
   - name: notice
+    description: Notice drafting, approval and sending
   - name: notification
+    description: Email, SMS and in-app notifications
   - name: packet-export
+    description: Evidence packet and audit exports
   - name: privacy
+    description: Data subject requests
   - name: property
+    description: Portfolios, properties, buildings and units
   - name: retention
+    description: Retention policies, assignments and gated disposition
   - name: screening
+    description: Applications, consent-gated screening and adverse action
   - name: sensitive-access
+    description: Time-boxed approvals for confidential and restricted data
   - name: signature
+    description: E-signature envelopes linked to leases
   - name: storage
+    description: Signed object storage access for the local driver
   - name: template
+    description: Approved templates for notices, emails and SMS
   - name: tenant
+    description: Tenant orgs, business accounts and subaccounts
   - name: tenant-profile
+    description: Resident and applicant profiles with classified fields
   - name: vendor
+    description: Vendor rolodex, contracts and assignment rules
 components:
   securitySchemes:
     bearerAuth:
