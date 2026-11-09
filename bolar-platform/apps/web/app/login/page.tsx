@@ -6,7 +6,7 @@ import { ApiError } from '@/lib/api-client';
 import { Button, Input, Alert } from '@/components/ui';
 
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, verifyMfa } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState('');
@@ -15,18 +15,47 @@ function LoginForm() {
   const [needsOrg, setNeedsOrg] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaStep, setMfaStep] = useState(false);
+  const [code, setCode] = useState('');
+
+  function goNext(portals: string[]) {
+    const next = params.get('next');
+    router.replace(next && next.startsWith('/') ? next : (portals[0] ?? '/'));
+  }
+
+  async function onVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    try {
+      const me = await verifyMfa(code);
+      goNext(me.portals);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Verification failed');
+    } finally { setLoading(false); }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
     try {
-      const me = await login({ email, password, ...(orgSlug ? { orgSlug } : {}) });
-      const next = params.get('next');
-      router.replace(next && next.startsWith('/') ? next : (me.portals[0] ?? '/'));
+      const { me, mfaRequired } = await login({ email, password, ...(orgSlug ? { orgSlug } : {}) });
+      if (mfaRequired) { setMfaStep(true); return; }
+      goNext(me.portals);
     } catch (err) {
       if (err instanceof ApiError && err.body.fieldErrors?.some((f) => f.path === 'body.orgSlug')) { setNeedsOrg(true); setError('This email belongs to more than one organization. Enter your organization slug.'); }
       else setError(err instanceof ApiError ? err.message : 'Sign in failed');
     } finally { setLoading(false); }
+  }
+
+  if (mfaStep) {
+    return (
+      <form onSubmit={onVerify} className="space-y-4" aria-describedby={error ? 'login-error' : undefined}>
+        <p className="text-sm text-muted">Multi-factor verification is enabled for this account. Enter the 6-digit code from your authenticator app.</p>
+        <Input label="Verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" required value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+        {error && <div id="login-error"><Alert tone="danger" title={error} /></div>}
+        <Button type="submit" className="w-full" loading={loading}>Verify and continue</Button>
+      </form>
+    );
   }
 
   return (

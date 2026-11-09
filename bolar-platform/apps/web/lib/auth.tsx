@@ -7,7 +7,9 @@ import { ApiError, authApi, hasRefreshToken, setTokens } from './api-client';
 interface AuthState {
   me: MeResponseDto | null;
   status: 'loading' | 'anonymous' | 'authenticated';
-  login: (input: { email: string; password: string; orgSlug?: string }) => Promise<MeResponseDto>;
+  login: (input: { email: string; password: string; orgSlug?: string }) => Promise<{ me: MeResponseDto; mfaRequired: boolean }>;
+  /** Completes login-time step-up for users with MFA enabled (POST /auth/mfa/verify). */
+  verifyMfa: (code: string) => Promise<MeResponseDto>;
   logout: () => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -33,6 +35,13 @@ function AuthInner({ children }: { children: ReactNode }) {
     setEnabled(true);
     const me = await authApi.me();
     qc.setQueryData(['me'], me);
+    return { me, mfaRequired: res.mfaRequired };
+  }, [qc]);
+  const verifyMfa = useCallback(async (code: string) => {
+    const tokens = await authApi.verifyMfa(code);
+    setTokens(tokens);
+    const me = await authApi.me();
+    qc.setQueryData(['me'], me);
     return me;
   }, [qc]);
   const logout = useCallback(async () => {
@@ -44,9 +53,10 @@ function AuthInner({ children }: { children: ReactNode }) {
     me: meQuery.data ?? null,
     status: !booted ? 'loading' : !enabled || (meQuery.isError && meQuery.error instanceof ApiError && meQuery.error.isUnauthenticated) ? 'anonymous' : meQuery.data ? 'authenticated' : meQuery.isError ? 'anonymous' : 'loading',
     login,
+    verifyMfa,
     logout,
     refetch: async () => { await meQuery.refetch(); },
-  }), [booted, enabled, meQuery, login, logout]);
+  }), [booted, enabled, meQuery, login, verifyMfa, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

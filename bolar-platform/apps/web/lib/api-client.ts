@@ -85,6 +85,7 @@ export const authApi = {
     try { token = localStorage.getItem(REFRESH_KEY); } catch { token = null; }
     try { await api('/auth/logout', { method: 'POST', body: token ? { refreshToken: token } : {} }); } finally { setTokens(null); }
   },
+  verifyMfa: (code: string) => api<{ accessToken: string; refreshToken: string; mfaRequired: boolean }>('/auth/mfa/verify', { method: 'POST', body: { code } }),
   acceptInvite: (input: { token: string; name: string; password: string }) => api<{ ok: true; orgSlug: string; email: string }>('/invitations/accept', { method: 'POST', body: input }),
 };
 
