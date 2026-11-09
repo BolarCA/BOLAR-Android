@@ -6,3 +6,4 @@ export * from './payments/index.js';
 export * from './signature/index.js';
 export * from './screening/index.js';
 export * from './webhooks/index.js';
+export * from './ai/index.js';

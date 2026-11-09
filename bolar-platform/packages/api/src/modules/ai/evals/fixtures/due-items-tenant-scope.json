@@ -1,0 +1,23 @@
+{
+  "name": "due-items-tenant-scope",
+  "category": "due",
+  "actor": "tenantA",
+  "command": "What is overdue?",
+  "notes": "Tenant sees only their own overdue request; finance and vendor categories are skipped for the role.",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "list_due_items"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "contains": [
+      "Leaking kitchen tap"
+    ],
+    "notContains": [
+      "INV-A-0001",
+      "Lapsed Cover"
+    ]
+  }
+}

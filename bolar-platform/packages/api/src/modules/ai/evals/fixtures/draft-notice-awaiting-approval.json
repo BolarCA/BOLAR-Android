@@ -1,0 +1,26 @@
+{
+  "name": "draft-notice-awaiting-approval",
+  "category": "draft",
+  "actor": "managerA",
+  "command": "Draft a late rent notice for this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "draft_notice"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "Draft created, awaiting approval",
+      "notice:"
+    ],
+    "noticeDraftCreated": true,
+    "noticeStatus": "draft"
+  }
+}

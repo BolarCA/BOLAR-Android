@@ -8,6 +8,8 @@ servers:
   - url: http://localhost:4000
     description: local
 tags:
+  - name: ai
+    description: ai operations
   - name: audit
     description: Append-only audit log queries
   - name: auth
@@ -9139,6 +9141,429 @@ components:
             - key
             - sizeBytes
             - sha256
+    AiCommandResponse:
+      type: object
+      properties:
+        thread:
+          $ref: "#/components/schemas/AiThread"
+        userMessage:
+          $ref: "#/components/schemas/AiMessage"
+        message:
+          $ref: "#/components/schemas/AiMessage"
+        toolCalls:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiToolCall"
+        drafts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiDraftRef"
+        budget:
+          $ref: "#/components/schemas/AiBudget"
+      required:
+        - thread
+        - userMessage
+        - message
+        - toolCalls
+        - drafts
+        - budget
+    AiThread:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        title:
+          type: string
+        contextType:
+          type:
+            - string
+            - "null"
+        contextId:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - contextType
+        - contextId
+        - status
+        - createdBy
+        - createdAt
+        - updatedAt
+    AiMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        threadId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+        content:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiSource"
+        model:
+          type:
+            - string
+            - "null"
+        inputTokens:
+          type:
+            - integer
+            - "null"
+        outputTokens:
+          type:
+            - integer
+            - "null"
+        costCents:
+          type:
+            - integer
+            - "null"
+        redactionCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - threadId
+        - role
+        - content
+        - sources
+        - model
+        - inputTokens
+        - outputTokens
+        - costCents
+        - redactionCount
+        - createdAt
+    AiSource:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        label:
+          type: string
+      required:
+        - type
+        - id
+        - label
+    AiToolCall:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        threadId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        messageId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        tool:
+          type: string
+        status:
+          type: string
+          enum:
+            - ok
+            - denied
+            - error
+        inputHash:
+          type: string
+        outputHash:
+          type:
+            - string
+            - "null"
+        inputSummary:
+          type: object
+          additionalProperties: {}
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiSource"
+        draftRef:
+          $ref: "#/components/schemas/AiDraftRef"
+        error:
+          type:
+            - string
+            - "null"
+        durationMs:
+          type:
+            - integer
+            - "null"
+        createdAt:
+          type: string
+      required:
+        - id
+        - threadId
+        - messageId
+        - tool
+        - status
+        - inputHash
+        - outputHash
+        - inputSummary
+        - sources
+        - draftRef
+        - error
+        - durationMs
+        - createdAt
+    AiDraftRef:
+      type:
+        - object
+        - "null"
+      properties:
+        type:
+          type: string
+          enum:
+            - notice
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        status:
+          type: string
+        href:
+          type: string
+        label:
+          type: string
+      required:
+        - type
+        - id
+        - status
+        - href
+        - label
+    AiBudget:
+      type: object
+      properties:
+        monthlyLimitCents:
+          type: integer
+        spentCents:
+          type: integer
+        remainingCents:
+          type: integer
+        commandCount:
+          type: integer
+        period:
+          type: string
+        exhausted:
+          type: boolean
+      required:
+        - monthlyLimitCents
+        - spentCents
+        - remainingCents
+        - commandCount
+        - period
+        - exhausted
+    AiCommand:
+      type: object
+      properties:
+        threadId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        command:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        context:
+          $ref: "#/components/schemas/AiContext"
+      required:
+        - command
+    AiContext:
+      type: object
+      properties:
+        resourceType:
+          type: string
+          enum:
+            - lease
+            - work_order
+            - case
+            - document
+            - property
+        resourceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      default: {}
+    AiThreadPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiThread"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    CreateAiThread:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        context:
+          $ref: "#/components/schemas/AiContext"
+    AiThreadDetail:
+      allOf:
+        - $ref: "#/components/schemas/AiThread"
+        - type: object
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: "#/components/schemas/AiMessage"
+            toolCalls:
+              type: array
+              items:
+                $ref: "#/components/schemas/AiToolCall"
+          required:
+            - messages
+            - toolCalls
+    AiToolCallPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiToolCall"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    AiAuditRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiAuditRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    AiAuditRow:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        actorId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        action:
+          type: string
+        outcome:
+          type: string
+        requestId:
+          type: string
+        threadId:
+          type:
+            - string
+            - "null"
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              tool:
+                type: string
+              status:
+                type: string
+            required:
+              - tool
+              - status
+        model:
+          type:
+            - string
+            - "null"
+        inputTokens:
+          type:
+            - integer
+            - "null"
+        outputTokens:
+          type:
+            - integer
+            - "null"
+        costCents:
+          type:
+            - integer
+            - "null"
+        redactionCount:
+          type:
+            - integer
+            - "null"
+        reason:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - createdAt
+        - actorId
+        - action
+        - outcome
+        - requestId
+        - threadId
+        - tools
+        - model
+        - inputTokens
+        - outputTokens
+        - costCents
+        - redactionCount
+        - reason
+    UpdateAiBudget:
+      type: object
+      properties:
+        monthlyLimitCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+      required:
+        - monthlyLimitCents
     HealthSummary:
       type: object
       properties:
@@ -27547,6 +27972,664 @@ paths:
                 $ref: "#/components/schemas/StoragePutResult"
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ai/commands:
+    post:
+      operationId: aiCommand
+      summary: "Run a natural-language command: plan registered tools, execute them with the actor's access, answer with citations; drafts await human approval"
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:use
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiCommand"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiCommandResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ai/threads:
+    get:
+      operationId: listAiThreads
+      summary: List the actor's assistant threads (ai:audit sees every thread in the org)
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:use
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum:
+              - lease
+              - work_order
+              - case
+              - document
+              - property
+          required: false
+          name: contextType
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: contextId
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiThreadPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createAiThread
+      summary: Open an assistant thread, optionally bound to a record
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:use
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAiThread"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiThread"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ai/threads/{id}:
+    get:
+      operationId: getAiThread
+      summary: Thread with its messages and tool calls
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:use
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiThreadDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ai/tool-calls:
+    get:
+      operationId: listAiToolCalls
+      summary: Tool-call records (status ok|denied|error, input/output hashes) for the actor's threads
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:use
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: threadId
+          in: query
+        - schema:
+            type: string
+            enum:
+              - ok
+              - denied
+              - error
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            enum:
+              - summarize_lease
+              - summarize_case
+              - summarize_work_order
+              - summarize_document
+              - list_due_items
+              - flag_anomalies
+              - draft_notice
+              - draft_email
+              - prepare_packet_outline
+              - recommend_next_steps
+          required: false
+          name: tool
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiToolCallPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ai/audit:
+    get:
+      operationId: listAiAudit
+      summary: "AI audit records: commands with tools, model, tokens, cost and redaction counts; denied tool calls; budget refusals"
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:audit
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: actorId
+          in: query
+        - schema:
+            type: string
+            enum:
+              - summarize_lease
+              - summarize_case
+              - summarize_work_order
+              - summarize_document
+              - list_due_items
+              - flag_anomalies
+              - draft_notice
+              - draft_email
+              - prepare_packet_outline
+              - recommend_next_steps
+          required: false
+          name: tool
+          in: query
+        - schema:
+            type: string
+            enum:
+              - ok
+              - denied
+              - error
+              - exceeded
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            enum:
+              - ai.command
+              - ai.tool_denied
+              - ai.budget_exceeded
+          required: false
+          name: action
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiAuditRowPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ai/budget:
+    get:
+      operationId: getAiBudget
+      summary: Monthly AI budget for the org (resets lazily each month)
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: ai:use
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiBudget"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    patch:
+      operationId: updateAiBudget
+      summary: Set the monthly AI budget (platform admin or org admin)
+      tags:
+        - ai
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: null
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAiBudget"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiBudget"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
           content:
             application/json:
               schema:

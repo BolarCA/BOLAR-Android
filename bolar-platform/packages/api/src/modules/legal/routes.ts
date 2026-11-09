@@ -27,7 +27,7 @@ async function visibleCaseFilter(ctx: RequestContext) {
  * Privileged cases are restricted: only the lead lawyer, the creator, a `represents` relationship holder or a
  * case-scoped role may open them. Everyone else gets 404 (no existence leak) plus an access.denied audit row.
  */
-async function loadCase(ctx: RequestContext, id: string, permission: 'case:read' | 'case:write'): Promise<CaseRow & Record<string, unknown>> {
+export async function loadCase(ctx: RequestContext, id: string, permission: 'case:read' | 'case:write'): Promise<CaseRow & Record<string, unknown>> {
   const row = await tenantDb(ctx).case.findFirst({ where: { id } });
   if (!row) throw errors.notFound();
   const userId = ctx.actor!.userId;

@@ -1,0 +1,20 @@
+{
+  "name": "summary-case-lawyer-ok",
+  "category": "summary",
+  "actor": "lawyerA",
+  "command": "Summarize case {{caseA}}",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_case"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "Privileged eviction matter",
+      "case:{{caseA}}"
+    ]
+  }
+}
