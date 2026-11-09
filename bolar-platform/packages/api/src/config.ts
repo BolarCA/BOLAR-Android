@@ -42,6 +42,10 @@ const schema = z.object({
   TRANSUNION_MODE: z.enum(['mock', 'sandbox', 'production']).default('mock'),
   IDME_MODE: z.enum(['mock', 'sandbox', 'production']).default('mock'),
   SENTRY_DSN: z.string().optional(),
+  ANTHROPIC_MODE: z.enum(['mock', 'sandbox', 'production']).default('mock'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  AI_MODEL: z.string().default('claude-fable-5-1'),
+  AI_MONTHLY_BUDGET_CENTS: z.coerce.number().int().min(0).default(5000),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -55,7 +59,7 @@ export function config(): Config {
     throw new Error(`Invalid environment: ${issues}`);
   }
   if (parsed.data.NODE_ENV !== 'production') {
-    for (const k of ['STRIPE_MODE', 'PLAID_MODE', 'SENDGRID_MODE', 'TWILIO_MODE', 'DOCUSIGN_MODE', 'TRANSUNION_MODE', 'IDME_MODE'] as const) {
+    for (const k of ['STRIPE_MODE', 'PLAID_MODE', 'SENDGRID_MODE', 'TWILIO_MODE', 'DOCUSIGN_MODE', 'TRANSUNION_MODE', 'IDME_MODE', 'ANTHROPIC_MODE'] as const) {
       if (parsed.data[k] === 'production') throw new Error(`${k}=production is not allowed outside production`);
     }
   }

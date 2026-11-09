@@ -19,9 +19,10 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@bolar/shared": "workspace:*",
+    "@anthropic-ai/sdk": "^1.6.0",
     "@aws-sdk/client-s3": "^3.800.0",
     "@aws-sdk/s3-request-presigner": "^3.800.0",
+    "@bolar/shared": "workspace:*",
     "nodemailer": "^10.0.6",
     "zod": "^4.6.6"
   },

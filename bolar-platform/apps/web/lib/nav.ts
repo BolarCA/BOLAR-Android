@@ -4,7 +4,7 @@ export interface PortalDef { key: string; base: string; title: string; descripti
 /** Portal registry (blueprint pages 37-47). Role gating mirrors packages/api/src/modules/auth/portals.ts. */
 export const PORTALS: PortalDef[] = [
   { key: 'admin', base: '/admin', title: 'Master admin', description: 'Platform health, orgs, global audit, support sessions, feature flags.', roles: ['platform_admin', 'support_agent'],
-    nav: [{ label: 'Overview', href: '/admin' }, { label: 'Organizations', href: '/admin/orgs', permission: 'platform:admin' }, { label: 'Users', href: '/admin/users', permission: 'user:read' }, { label: 'Audit', href: '/admin/audit', permission: 'audit:read' }, { label: 'Feature flags', href: '/admin/feature-flags', permission: 'feature_flag:write' }, { label: 'Support sessions', href: '/admin/support-sessions', permission: 'support_session:start' }] },
+    nav: [{ label: 'Overview', href: '/admin' }, { label: 'Organizations', href: '/admin/orgs', permission: 'platform:admin' }, { label: 'Users', href: '/admin/users', permission: 'user:read' }, { label: 'Audit', href: '/admin/audit', permission: 'audit:read' }, { label: 'Feature flags', href: '/admin/feature-flags', permission: 'feature_flag:write' }, { label: 'Support sessions', href: '/admin/support-sessions', permission: 'support_session:start' }, { label: 'AI audit', href: '/admin/ai-audit', permission: 'ai:audit' }] },
   { key: 'subaccount', base: '/subaccount', title: 'Subaccount admin', description: 'Staff, roles, properties, reports, operational settings, scoped audit.', roles: ['org_admin', 'subaccount_admin'],
     nav: [{ label: 'Overview', href: '/subaccount' }, { label: 'Staff & roles', href: '/subaccount/users', permission: 'user:read' }, { label: 'Access requests', href: '/subaccount/access-requests', permission: 'sensitive_access:request' }, { label: 'Privacy requests', href: '/subaccount/privacy-requests', permission: 'privacy_request:read' }, { label: 'Retention', href: '/subaccount/retention', permission: 'retention:read' }, { label: 'Audit', href: '/subaccount/audit', permission: 'audit:read' }] },
   { key: 'owner', base: '/owner', title: 'Landlord', description: 'Portfolio, occupancy, income, approvals, documents, property performance.', roles: ['landlord', 'org_admin'],
@@ -26,7 +26,7 @@ export const PORTALS: PortalDef[] = [
   { key: 'gov', base: '/gov', title: 'Government (restricted)', description: 'Agency requests, stored data gate, exports, audit manifest, limited access.', roles: ['government'],
     nav: [{ label: 'Requests', href: '/gov' }, { label: 'Exports', href: '/gov/exports' }] },
   { key: 'compliance', base: '/compliance', title: 'Compliance', description: 'Review queue, rules, notices, remediation, evidence.', roles: ['compliance_officer', 'org_admin'],
-    nav: [{ label: 'Queue', href: '/compliance' }, { label: 'Rules', href: '/compliance/rules', permission: 'compliance:read' }, { label: 'Notices', href: '/compliance/notices', permission: 'notice:draft' }] },
+    nav: [{ label: 'Queue', href: '/compliance' }, { label: 'Rules', href: '/compliance/rules', permission: 'compliance:read' }, { label: 'Notices', href: '/compliance/notices', permission: 'notice:draft' }, { label: 'AI audit', href: '/compliance/ai-audit', permission: 'ai:audit' }] },
 ];
 
 export function portalForPath(pathname: string): PortalDef | undefined {

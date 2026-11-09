@@ -1171,3 +1171,75 @@ model FeatureFlag {
 
   @@unique([tenantOrgId, key])
 }
+
+// ---- AI assistant (Days 61-74): tenant-scoped threads, messages, tool calls and budgets ----
+model AiThread {
+  id          String   @id @default(cuid())
+  tenantOrgId String
+  createdBy   String // user id of the actor who opened the thread
+  title       String
+  contextType String? // lease | work_order | case | document | property
+  contextId   String?
+  status      String   @default("open") // open | archived
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages  AiMessage[]
+  toolCalls AiToolCall[]
+
+  @@index([tenantOrgId, createdBy, createdAt])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model AiMessage {
+  id             String   @id @default(cuid())
+  tenantOrgId    String
+  threadId       String
+  role           String // user | assistant
+  content        String // redacted before storage; never raw PII
+  sources        Json     @default("[]") // [{type,id,label}]
+  model          String?
+  inputTokens    Int?
+  outputTokens   Int?
+  costCents      Int?
+  redactionCount Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  thread AiThread @relation(fields: [threadId], references: [id])
+
+  @@index([tenantOrgId, threadId, createdAt])
+}
+
+model AiToolCall {
+  id           String   @id @default(cuid())
+  tenantOrgId  String
+  threadId     String
+  messageId    String? // assistant message that used the result
+  tool         String
+  status       String // ok | denied | error
+  inputHash    String
+  outputHash   String?
+  inputSummary Json     @default("{}") // redacted input
+  sources      Json     @default("[]")
+  draftRef     Json? // {type:'notice', id, status, href}
+  error        String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  thread AiThread @relation(fields: [threadId], references: [id])
+
+  @@index([tenantOrgId, threadId, createdAt])
+  @@index([tenantOrgId, status, createdAt])
+  @@index([tenantOrgId, tool, createdAt])
+}
+
+model AiBudget {
+  id                String   @id @default(cuid())
+  tenantOrgId       String   @unique
+  monthlyLimitCents Int
+  spentCents        Int      @default(0)
+  commandCount      Int      @default(0)
+  period            String // YYYY-MM; lazily reset when the month changes
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

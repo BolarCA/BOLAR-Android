@@ -1,0 +1,25 @@
+{
+  "name": "draft-email-text-only",
+  "category": "draft",
+  "actor": "managerA",
+  "command": "Draft an email to the tenant about the upcoming inspection",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "draft_email"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "subject:",
+      "Nothing was sent"
+    ],
+    "noticeDraftCreated": false
+  }
+}
