@@ -16,7 +16,7 @@ export function createApp(): Express {
   app.set('trust proxy', 1);
   app.use(helmet());
   app.use(cors({ origin: cfg.CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: true, exposedHeaders: ['X-Request-Id', 'Idempotent-Replayed'] }));
-  app.use(express.json({ limit: '2mb' }));
+  app.use((req, res, next) => (req.path.startsWith('/webhooks/') ? next() : express.json({ limit: '2mb' })(req, res, next)));
   app.use(
     pinoHttp({
       logger,

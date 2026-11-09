@@ -1,6 +1,10 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+for (const c of [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')]) if (existsSync(c)) loadEnv({ path: c, quiet: true });
 process.env.NODE_ENV = 'test';
 process.env.QUEUE_DRIVER = 'memory';
 process.env.AUTH_JWT_SECRET ??= 'test_secret_test_secret_test_secret_test_secret_0000';
 process.env.DATABASE_URL ??= 'postgresql://bolar@localhost:5432/bolar?schema=public';
 process.env.LOG_LEVEL = 'silent';
+process.env.STORAGE_LOCAL_ROOT = resolve(process.cwd(), '.storage-test');

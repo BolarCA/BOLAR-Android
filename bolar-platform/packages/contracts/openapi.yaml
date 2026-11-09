@@ -12,6 +12,7 @@ tags:
   - name: auth
   - name: health
   - name: iam
+  - name: integrations
   - name: sensitive-access
   - name: tenant
 components:
@@ -1164,6 +1165,17 @@ components:
       required:
         - items
         - nextCursor
+    WebhookOutcome:
+      type: object
+      properties:
+        outcome:
+          type: string
+          enum:
+            - processed
+            - duplicate
+            - ignored
+      required:
+        - outcome
   parameters: {}
 paths:
   /health:
@@ -3695,6 +3707,49 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
         "404":
           description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /webhooks/{provider}:
+    post:
+      operationId: receiveWebhook
+      summary: Receive and idempotently process a provider webhook
+      tags:
+        - integrations
+      security: []
+      x-bolar-auth: public
+      x-bolar-permission: null
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 32
+          required: true
+          name: provider
+          in: path
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookOutcome"
+        "400":
+          description: Validation error
           content:
             application/json:
               schema:
