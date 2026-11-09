@@ -71,6 +71,31 @@ components:
         - checks
         - version
         - requestId
+    LoginResponse:
+      allOf:
+        - $ref: "#/components/schemas/TokenPair"
+        - type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                email:
+                  type: string
+                name:
+                  type: string
+              required:
+                - id
+                - email
+                - name
+            org:
+              $ref: "#/components/schemas/OrgSummary"
+          required:
+            - user
+            - org
     OrgSummary:
       type: object
       properties:
@@ -107,31 +132,6 @@ components:
         - expiresIn
         - tokenType
         - mfaRequired
-    LoginResponse:
-      allOf:
-        - $ref: "#/components/schemas/TokenPair"
-        - type: object
-          properties:
-            user:
-              type: object
-              properties:
-                id:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-                email:
-                  type: string
-                name:
-                  type: string
-              required:
-                - id
-                - email
-                - name
-            org:
-              $ref: "#/components/schemas/OrgSummary"
-          required:
-            - user
-            - org
     LoginRequest:
       type: object
       properties:
@@ -191,44 +191,6 @@ components:
           pattern: ^\d{6}$
       required:
         - code
-    ScopedRole:
-      type: object
-      properties:
-        role:
-          type: string
-          enum: &a1
-            - platform_admin
-            - org_admin
-            - subaccount_admin
-            - landlord
-            - property_manager
-            - tenant
-            - corp_admin
-            - occupant
-            - bookkeeper
-            - lawyer
-            - vendor
-            - government
-            - compliance_officer
-            - support_agent
-        scopeType:
-          type: string
-          enum: &a2
-            - platform
-            - org
-            - subaccount
-            - property
-            - case
-        scopeId:
-          type:
-            - string
-            - "null"
-          minLength: 1
-          maxLength: 64
-      required:
-        - role
-        - scopeType
-        - scopeId
     MeResponse:
       type: object
       properties:
@@ -268,7 +230,7 @@ components:
           type: array
           items:
             type: string
-            enum: &a3
+            enum:
               - platform:admin
               - org:read
               - org:write
@@ -364,6 +326,58 @@ components:
         - permissions
         - portals
         - supportSessionId
+    ScopedRole:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - platform_admin
+            - org_admin
+            - subaccount_admin
+            - landlord
+            - property_manager
+            - tenant
+            - corp_admin
+            - occupant
+            - bookkeeper
+            - lawyer
+            - vendor
+            - government
+            - compliance_officer
+            - support_agent
+        scopeType:
+          type: string
+          enum:
+            - platform
+            - org
+            - subaccount
+            - property
+            - case
+        scopeId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+      required:
+        - role
+        - scopeType
+        - scopeId
+    TenantOrgPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantOrg"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     TenantOrg:
       type: object
       properties:
@@ -388,20 +402,6 @@ components:
         - plan
         - status
         - createdAt
-    TenantOrgPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/TenantOrg"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     CreateTenantOrg:
       type: object
       properties:
@@ -491,6 +491,20 @@ components:
           default: property_management
       required:
         - name
+    SubaccountPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subaccount"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     Subaccount:
       type: object
       properties:
@@ -519,20 +533,6 @@ components:
         - name
         - status
         - createdAt
-    SubaccountPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Subaccount"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     CreateSubaccount:
       type: object
       properties:
@@ -560,6 +560,20 @@ components:
             - active
             - suspended
             - archived
+    UserProfilePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserProfile"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     UserProfile:
       type: object
       properties:
@@ -588,10 +602,29 @@ components:
             properties:
               role:
                 type: string
-                enum: *a1
+                enum:
+                  - platform_admin
+                  - org_admin
+                  - subaccount_admin
+                  - landlord
+                  - property_manager
+                  - tenant
+                  - corp_admin
+                  - occupant
+                  - bookkeeper
+                  - lawyer
+                  - vendor
+                  - government
+                  - compliance_officer
+                  - support_agent
               scopeType:
                 type: string
-                enum: *a2
+                enum:
+                  - platform
+                  - org
+                  - subaccount
+                  - property
+                  - case
               scopeId:
                 type:
                   - string
@@ -611,20 +644,6 @@ components:
         - lastLoginAt
         - createdAt
         - roles
-    UserProfilePage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/UserProfile"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     UpdateUser:
       type: object
       properties:
@@ -638,6 +657,20 @@ components:
             - active
             - suspended
             - deactivated
+    InvitationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Invitation"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     Invitation:
       type: object
       properties:
@@ -649,10 +682,29 @@ components:
           type: string
         role:
           type: string
-          enum: *a1
+          enum:
+            - platform_admin
+            - org_admin
+            - subaccount_admin
+            - landlord
+            - property_manager
+            - tenant
+            - corp_admin
+            - occupant
+            - bookkeeper
+            - lawyer
+            - vendor
+            - government
+            - compliance_officer
+            - support_agent
         scopeType:
           type: string
-          enum: *a2
+          enum:
+            - platform
+            - org
+            - subaccount
+            - property
+            - case
         scopeId:
           type:
             - string
@@ -679,20 +731,6 @@ components:
         - status
         - expiresAt
         - createdAt
-    InvitationPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Invitation"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     CreateInvitationResponse:
       allOf:
         - $ref: "#/components/schemas/Invitation"
@@ -709,10 +747,29 @@ components:
           format: email
         role:
           type: string
-          enum: *a1
+          enum:
+            - platform_admin
+            - org_admin
+            - subaccount_admin
+            - landlord
+            - property_manager
+            - tenant
+            - corp_admin
+            - occupant
+            - bookkeeper
+            - lawyer
+            - vendor
+            - government
+            - compliance_officer
+            - support_agent
         scopeType:
           type: string
-          enum: *a2
+          enum:
+            - platform
+            - org
+            - subaccount
+            - property
+            - case
           default: org
         scopeId:
           type: string
@@ -746,28 +803,186 @@ components:
           type: array
           items:
             type: string
-            enum: *a3
+            enum:
+              - platform:admin
+              - org:read
+              - org:write
+              - subaccount:read
+              - subaccount:write
+              - user:read
+              - user:invite
+              - user:write
+              - role:read
+              - role:assign
+              - relationship:read
+              - relationship:write
+              - sensitive_access:request
+              - sensitive_access:approve
+              - audit:read
+              - audit:read_sensitive
+              - feature_flag:write
+              - support_session:start
+              - property:read
+              - property:write
+              - unit:read
+              - unit:write
+              - tenant_profile:read
+              - tenant_profile:write
+              - tenant_profile:read_sensitive
+              - application:read
+              - application:write
+              - screening:order
+              - screening:read_report
+              - adverse_action:manage
+              - lease:read
+              - lease:write
+              - lease:approve
+              - lease:send
+              - document:read
+              - document:write
+              - document:read_restricted
+              - media:read
+              - media:write
+              - template:read
+              - template:write
+              - template:approve
+              - notification:send
+              - maintenance:request
+              - work_order:read
+              - work_order:write
+              - work_order:assign
+              - work_order:vendor_update
+              - vendor:read
+              - vendor:write
+              - finance:read
+              - finance:write
+              - finance:post
+              - finance:approve_adjustment
+              - payment:read
+              - payment:collect
+              - bank:read
+              - compliance:read
+              - compliance:write
+              - compliance:approve
+              - notice:draft
+              - notice:approve
+              - retention:read
+              - retention:write
+              - privacy_request:read
+              - privacy_request:write
+              - privacy_request:approve
+              - legal_hold:read
+              - legal_hold:write
+              - legal_hold:release
+              - case:read
+              - case:write
+              - agency_request:read
+              - agency_request:write
+              - agency_request:approve
+              - export:request
+              - export:approve
+              - ai:use
+              - ai:audit
         roles:
           type: object
           properties:
-            platform_admin: &a4
+            platform_admin: &a1
               type: array
               items:
                 type: string
-                enum: *a3
-            org_admin: *a4
-            subaccount_admin: *a4
-            landlord: *a4
-            property_manager: *a4
-            tenant: *a4
-            corp_admin: *a4
-            occupant: *a4
-            bookkeeper: *a4
-            lawyer: *a4
-            vendor: *a4
-            government: *a4
-            compliance_officer: *a4
-            support_agent: *a4
+                enum:
+                  - platform:admin
+                  - org:read
+                  - org:write
+                  - subaccount:read
+                  - subaccount:write
+                  - user:read
+                  - user:invite
+                  - user:write
+                  - role:read
+                  - role:assign
+                  - relationship:read
+                  - relationship:write
+                  - sensitive_access:request
+                  - sensitive_access:approve
+                  - audit:read
+                  - audit:read_sensitive
+                  - feature_flag:write
+                  - support_session:start
+                  - property:read
+                  - property:write
+                  - unit:read
+                  - unit:write
+                  - tenant_profile:read
+                  - tenant_profile:write
+                  - tenant_profile:read_sensitive
+                  - application:read
+                  - application:write
+                  - screening:order
+                  - screening:read_report
+                  - adverse_action:manage
+                  - lease:read
+                  - lease:write
+                  - lease:approve
+                  - lease:send
+                  - document:read
+                  - document:write
+                  - document:read_restricted
+                  - media:read
+                  - media:write
+                  - template:read
+                  - template:write
+                  - template:approve
+                  - notification:send
+                  - maintenance:request
+                  - work_order:read
+                  - work_order:write
+                  - work_order:assign
+                  - work_order:vendor_update
+                  - vendor:read
+                  - vendor:write
+                  - finance:read
+                  - finance:write
+                  - finance:post
+                  - finance:approve_adjustment
+                  - payment:read
+                  - payment:collect
+                  - bank:read
+                  - compliance:read
+                  - compliance:write
+                  - compliance:approve
+                  - notice:draft
+                  - notice:approve
+                  - retention:read
+                  - retention:write
+                  - privacy_request:read
+                  - privacy_request:write
+                  - privacy_request:approve
+                  - legal_hold:read
+                  - legal_hold:write
+                  - legal_hold:release
+                  - case:read
+                  - case:write
+                  - agency_request:read
+                  - agency_request:write
+                  - agency_request:approve
+                  - export:request
+                  - export:approve
+                  - ai:use
+                  - ai:audit
+            org_admin: *a1
+            subaccount_admin: *a1
+            landlord: *a1
+            property_manager: *a1
+            tenant: *a1
+            corp_admin: *a1
+            occupant: *a1
+            bookkeeper: *a1
+            lawyer: *a1
+            vendor: *a1
+            government: *a1
+            compliance_officer: *a1
+            support_agent: *a1
       required:
         - permissions
         - roles
@@ -784,10 +999,29 @@ components:
           maxLength: 64
         role:
           type: string
-          enum: *a1
+          enum:
+            - platform_admin
+            - org_admin
+            - subaccount_admin
+            - landlord
+            - property_manager
+            - tenant
+            - corp_admin
+            - occupant
+            - bookkeeper
+            - lawyer
+            - vendor
+            - government
+            - compliance_officer
+            - support_agent
         scopeType:
           type: string
-          enum: *a2
+          enum:
+            - platform
+            - org
+            - subaccount
+            - property
+            - case
         scopeId:
           type:
             - string
@@ -812,10 +1046,29 @@ components:
           maxLength: 64
         role:
           type: string
-          enum: *a1
+          enum:
+            - platform_admin
+            - org_admin
+            - subaccount_admin
+            - landlord
+            - property_manager
+            - tenant
+            - corp_admin
+            - occupant
+            - bookkeeper
+            - lawyer
+            - vendor
+            - government
+            - compliance_officer
+            - support_agent
         scopeType:
           type: string
-          enum: *a2
+          enum:
+            - platform
+            - org
+            - subaccount
+            - property
+            - case
         scopeId:
           type: string
           minLength: 1
@@ -824,6 +1077,20 @@ components:
         - userId
         - role
         - scopeType
+    RelationshipPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Relationship"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     Relationship:
       type: object
       properties:
@@ -833,7 +1100,7 @@ components:
           maxLength: 64
         subjectType:
           type: string
-          enum: &a5
+          enum:
             - user
             - tenant_profile
             - vendor_profile
@@ -843,7 +1110,7 @@ components:
           maxLength: 64
         relation:
           type: string
-          enum: &a6
+          enum:
             - owner_of
             - manages
             - tenant_of
@@ -856,7 +1123,7 @@ components:
             - bookkeeper_for
         objectType:
           type: string
-          enum: &a7
+          enum:
             - tenant_org
             - business_account
             - subaccount
@@ -892,26 +1159,15 @@ components:
         - startsAt
         - endsAt
         - createdAt
-    RelationshipPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Relationship"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     CreateRelationship:
       type: object
       properties:
         subjectType:
           type: string
-          enum: *a5
+          enum:
+            - user
+            - tenant_profile
+            - vendor_profile
           default: user
         subjectId:
           type: string
@@ -919,10 +1175,31 @@ components:
           maxLength: 64
         relation:
           type: string
-          enum: *a6
+          enum:
+            - owner_of
+            - manages
+            - tenant_of
+            - occupant_of
+            - represents
+            - assigned_to
+            - vendor_for
+            - agency_for
+            - member_of
+            - bookkeeper_for
         objectType:
           type: string
-          enum: *a7
+          enum:
+            - tenant_org
+            - business_account
+            - subaccount
+            - portfolio
+            - property
+            - unit
+            - lease
+            - work_order
+            - case
+            - agency_request
+            - document
         objectId:
           type: string
           minLength: 1
@@ -960,10 +1237,100 @@ components:
       properties:
         permission:
           type: string
-          enum: *a3
+          enum:
+            - platform:admin
+            - org:read
+            - org:write
+            - subaccount:read
+            - subaccount:write
+            - user:read
+            - user:invite
+            - user:write
+            - role:read
+            - role:assign
+            - relationship:read
+            - relationship:write
+            - sensitive_access:request
+            - sensitive_access:approve
+            - audit:read
+            - audit:read_sensitive
+            - feature_flag:write
+            - support_session:start
+            - property:read
+            - property:write
+            - unit:read
+            - unit:write
+            - tenant_profile:read
+            - tenant_profile:write
+            - tenant_profile:read_sensitive
+            - application:read
+            - application:write
+            - screening:order
+            - screening:read_report
+            - adverse_action:manage
+            - lease:read
+            - lease:write
+            - lease:approve
+            - lease:send
+            - document:read
+            - document:write
+            - document:read_restricted
+            - media:read
+            - media:write
+            - template:read
+            - template:write
+            - template:approve
+            - notification:send
+            - maintenance:request
+            - work_order:read
+            - work_order:write
+            - work_order:assign
+            - work_order:vendor_update
+            - vendor:read
+            - vendor:write
+            - finance:read
+            - finance:write
+            - finance:post
+            - finance:approve_adjustment
+            - payment:read
+            - payment:collect
+            - bank:read
+            - compliance:read
+            - compliance:write
+            - compliance:approve
+            - notice:draft
+            - notice:approve
+            - retention:read
+            - retention:write
+            - privacy_request:read
+            - privacy_request:write
+            - privacy_request:approve
+            - legal_hold:read
+            - legal_hold:write
+            - legal_hold:release
+            - case:read
+            - case:write
+            - agency_request:read
+            - agency_request:write
+            - agency_request:approve
+            - export:request
+            - export:approve
+            - ai:use
+            - ai:audit
         resourceType:
           type: string
-          enum: *a7
+          enum:
+            - tenant_org
+            - business_account
+            - subaccount
+            - portfolio
+            - property
+            - unit
+            - lease
+            - work_order
+            - case
+            - agency_request
+            - document
         resourceId:
           type: string
           minLength: 1
@@ -974,6 +1341,20 @@ components:
           maxLength: 64
       required:
         - permission
+    SensitiveAccessRequestPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensitiveAccessRequest"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     SensitiveAccessRequest:
       type: object
       properties:
@@ -998,7 +1379,7 @@ components:
             - restricted
         purpose:
           type: string
-          enum: &a8
+          enum:
             - lease_administration
             - maintenance_coordination
             - financial_reconciliation
@@ -1041,20 +1422,6 @@ components:
         - approvedBy
         - expiresAt
         - createdAt
-    SensitiveAccessRequestPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/SensitiveAccessRequest"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     CreateSensitiveAccessRequest:
       type: object
       properties:
@@ -1073,7 +1440,15 @@ components:
             - restricted
         purpose:
           type: string
-          enum: *a8
+          enum:
+            - lease_administration
+            - maintenance_coordination
+            - financial_reconciliation
+            - compliance_review
+            - legal_case
+            - privacy_request
+            - agency_request
+            - support_session
         justification:
           type: string
           minLength: 10
@@ -1102,6 +1477,20 @@ components:
           maxLength: 1000
       required:
         - decision
+    AuditLogPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     AuditLog:
       type: object
       properties:
@@ -1151,20 +1540,6 @@ components:
         - purpose
         - policyVersion
         - createdAt
-    AuditLogPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/AuditLog"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     WebhookOutcome:
       type: object
       properties:
@@ -1193,6 +1568,7 @@ paths:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -1229,6 +1605,7 @@ paths:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1270,6 +1647,7 @@ paths:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1311,6 +1689,7 @@ paths:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1353,12 +1732,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -1414,12 +1795,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1480,12 +1863,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -1555,12 +1940,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -1615,6 +2002,7 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
@@ -1623,12 +2011,14 @@ paths:
             maxLength: 128
             description: Required. Same key + same payload replays the original response.
           required: true
+          description: Required. Same key + same payload replays the original response.
           name: Idempotency-Key
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1703,12 +2093,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -1770,12 +2162,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1836,12 +2230,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -1903,12 +2299,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -1983,12 +2381,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2043,12 +2443,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -2116,12 +2518,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2183,12 +2587,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -2279,12 +2685,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2347,12 +2755,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2414,12 +2824,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -2494,12 +2906,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2554,12 +2968,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -2627,12 +3043,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2687,6 +3105,7 @@ paths:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -2739,12 +3158,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2819,12 +3240,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -2891,12 +3314,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -2964,12 +3389,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -3026,7 +3453,18 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a7
+            enum:
+              - tenant_org
+              - business_account
+              - subaccount
+              - portfolio
+              - property
+              - unit
+              - lease
+              - work_order
+              - case
+              - agency_request
+              - document
           required: false
           name: objectType
           in: query
@@ -3039,7 +3477,17 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a6
+            enum:
+              - owner_of
+              - manages
+              - tenant_of
+              - occupant_of
+              - represents
+              - assigned_to
+              - vendor_for
+              - agency_for
+              - member_of
+              - bookkeeper_for
           required: false
           name: relation
           in: query
@@ -3060,12 +3508,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -3120,12 +3570,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -3193,12 +3645,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -3250,12 +3704,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -3348,12 +3804,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -3408,12 +3866,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -3481,12 +3941,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -3554,12 +4016,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -3672,12 +4136,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -3739,6 +4205,7 @@ paths:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:

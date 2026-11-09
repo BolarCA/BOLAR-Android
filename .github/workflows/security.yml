@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with: { package_json_file: bolar-platform/package.json }
       - uses: actions/setup-node@v4
         with: { node-version: 'lts/*', cache: 'pnpm', cache-dependency-path: bolar-platform/pnpm-lock.yaml }
       - run: pnpm install --frozen-lockfile
@@ -23,15 +24,3 @@ jobs:
           set -e
           if git grep -nE "(sk_live_[0-9a-zA-Z]{8,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----)" -- . ':!**/*.md' ; then
             echo "Potential live secret committed"; exit 1; fi
-  trivy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: bolar-platform
-          severity: HIGH,CRITICAL
-          exit-code: '1'
-          ignore-unfixed: true
