@@ -47,6 +47,7 @@ serious and critical) reports no violations on any allowed portal landing or pri
 | 3 | Drawer/Modal lacked focus trap and Escape handling | web | high | fixed in `components/ui/index.tsx` |
 | 4 | Portal switcher order differed from API landing order | web | low | fixed: shell sorts by `/me` portals |
 | 5 | zod 4 `z.record` single-argument calls from merged slices | contracts | low | fixed |
+| 6 | `lease.spec.ts` tenant-profile redirect flaky on a cold dev server: first compile of `/manager/tenants/[id]` exceeded the 5s expect timeout, masked in CI by the retry | tests | low | fixed: global setup warms every dynamic route after seeding; expect timeout raised to 10s |
 
 ## Known limits carried to the launch gate
 - Virus scanning is a no-op placeholder behind `VirusScanner`.

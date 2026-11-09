@@ -17,6 +17,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : [['list']],
   timeout: 45_000,
+  // Dev-server route compilation can push a first navigation past Playwright's 5s default; routes are also warmed in
+  // global setup, this is the second line of defence.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: WEB_URL,
     trace: 'off',
