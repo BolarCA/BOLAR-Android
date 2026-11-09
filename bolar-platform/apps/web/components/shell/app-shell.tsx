@@ -2,9 +2,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
+import { getActAsOrg, setActAsOrg } from '@/lib/api-client';
 import { portalForPath, portalsForRoles, type PortalDef } from '@/lib/nav';
-import { Button, Badge, cn } from '../ui';
+import { Button, cn } from '../ui';
 import { Denied, Skeleton } from '../ui/state-view';
 
 /** Shared app shell: skip link, sidebar, topbar, portal switcher, role gating (blueprint p36). */
@@ -13,14 +15,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [actAs, setActAs] = useState<string | null>(null);
+  const qc = useQueryClient();
   const portal = portalForPath(pathname);
+
+  useEffect(() => { setActAs(getActAsOrg()); }, [pathname]);
+  // Leaving "act as org" clears the stored target and reloads so every cached query is re-fetched in the home org.
+  const stopActing = () => { setActAsOrg(null); qc.clear(); window.location.assign('/admin'); };
 
   useEffect(() => { if (status === 'anonymous') router.replace(`/login?next=${encodeURIComponent(pathname)}`); }, [status, pathname, router]);
   useEffect(() => { setOpen(false); }, [pathname]);
 
   if (status !== 'authenticated' || !me) return <div className="p-8"><Skeleton kind="detail" /></div>;
   const roles = me.roles.map((r) => r.role as string);
-  const allowed = portalsForRoles(roles);
+  // Same portals the API grants (me.portals), ordered by its canonical landing order so the switcher matches the redirect.
+  const allowed = portalsForRoles(roles).sort((a, b) => me.portals.indexOf(a.base) - me.portals.indexOf(b.base));
   const canEnter = portal ? allowed.some((p) => p.key === portal.key) : false;
 
   return (
@@ -62,12 +71,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Breadcrumbs pathname={pathname} portal={portal} />
           </div>
           <div className="flex items-center gap-3">
-            {me.supportSessionId && <Badge tone="warning">Support session</Badge>}
             <span className="hidden text-sm text-muted sm:inline">{me.org.name}</span>
             <span className="text-sm font-medium">{me.actor.name}</span>
             <Button variant="secondary" onClick={() => void logout().then(() => router.replace('/login'))}>Sign out</Button>
           </div>
         </header>
+        {(me.supportSessionId || actAs) && (
+          <div role="status" data-testid="support-banner" className="flex flex-wrap items-center justify-between gap-3 border-b border-orange-100 bg-orange-100/70 px-4 py-2 text-sm text-navy-900 lg:px-8">
+            <p>
+              <span className="font-semibold">{me.supportSessionId ? 'Support session active' : 'Acting as organization'}:</span> you are working inside <span className="font-semibold">{me.org.name}</span>{actAs ? ` (${actAs})` : ''}. Every request is audited{me.supportSessionId ? ' against this support session' : ''}.
+            </p>
+            {actAs && <Button variant="secondary" onClick={stopActing}>Stop acting as org</Button>}
+          </div>
+        )}
         <main id="main" tabIndex={-1} className="flex-1 p-4 lg:p-8">
           {portal && !canEnter ? <Denied /> : children}
         </main>

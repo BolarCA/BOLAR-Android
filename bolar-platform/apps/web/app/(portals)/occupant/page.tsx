@@ -1,2 +1,3 @@
-import { PortalLanding } from '@/components/shell/portal-landing';
-export default function Page() { return <PortalLanding nextStep="Your housing status appears once a lease is assigned to you." />; }
+import { OccupantHome } from '@/components/occupant/home';
+/** Occupant landing (blueprint p45, Day 55): housing status, requests and documents for the signed-in occupant. */
+export default function Page() { return <OccupantHome />; }

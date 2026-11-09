@@ -1,2 +1,3 @@
-import { PortalLanding } from '@/components/shell/portal-landing';
-export default function Page() { return <PortalLanding nextStep="Employee housing overview appears once occupants are invited." />; }
+import { CorporateOverview } from '@/components/corporate-admin/overview';
+/** Corporate tenant admin landing (blueprint p44, Day 55): occupants, leases and documents for the business account. */
+export default function Page() { return <CorporateOverview />; }

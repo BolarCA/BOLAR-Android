@@ -22,3 +22,4 @@ export * from './legal-hold.js';
 export * from './legal.js';
 export * from './packet-export.js';
 export * from './signature.js';
+export * from './platform.js';

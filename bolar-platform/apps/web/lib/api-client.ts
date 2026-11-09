@@ -5,6 +5,8 @@ import type { ErrorBodyDto, LoginResponseDto, MeResponseDto } from '@bolar/contr
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 const REFRESH_KEY = 'bolar.refreshToken';
 const ORG_KEY = 'bolar.orgSlug';
+/** Platform staff "act as org" target (slug). Sent as X-Tenant-Org on every request; the API audits each use. */
+const ACT_AS_KEY = 'bolar.actAsOrg';
 
 let accessToken: string | null = null;
 let refreshing: Promise<boolean> | null = null;
@@ -25,8 +27,14 @@ export function setTokens(t: { accessToken: string; refreshToken: string } | nul
   accessToken = t?.accessToken ?? null;
   try {
     if (t) { localStorage.setItem(REFRESH_KEY, t.refreshToken); if (orgSlug) localStorage.setItem(ORG_KEY, orgSlug); }
-    else { localStorage.removeItem(REFRESH_KEY); localStorage.removeItem(ORG_KEY); }
+    else { localStorage.removeItem(REFRESH_KEY); localStorage.removeItem(ORG_KEY); localStorage.removeItem(ACT_AS_KEY); }
   } catch { /* storage unavailable (private mode); session stays in memory */ }
+}
+export function getActAsOrg(): string | null {
+  try { return localStorage.getItem(ACT_AS_KEY); } catch { return null; }
+}
+export function setActAsOrg(slug: string | null) {
+  try { if (slug) localStorage.setItem(ACT_AS_KEY, slug); else localStorage.removeItem(ACT_AS_KEY); } catch { /* storage unavailable */ }
 }
 export function hasRefreshToken(): boolean {
   try { return Boolean(localStorage.getItem(REFRESH_KEY)); } catch { return false; }
@@ -52,7 +60,8 @@ export interface RequestOptions { method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'D
 
 export async function api<T>(path: string, opts: RequestOptions = {}, retry = true): Promise<T> {
   if (!accessToken && hasRefreshToken()) await refresh();
-  const headers: Record<string, string> = { Accept: 'application/json', ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers ?? {}) };
+  const actAs = getActAsOrg();
+  const headers: Record<string, string> = { Accept: 'application/json', ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(actAs ? { 'X-Tenant-Org': actAs } : {}), ...(opts.headers ?? {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
   if (opts.purpose) headers['X-Access-Purpose'] = opts.purpose;

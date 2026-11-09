@@ -1,5 +1,5 @@
 'use client';
-import { type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, forwardRef } from 'react';
+import { type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, forwardRef, useEffect, useRef } from 'react';
 
 export function cn(...parts: (string | false | null | undefined)[]) { return parts.filter(Boolean).join(' '); }
 
@@ -119,12 +119,48 @@ export function Table<T extends { id: string }>({ columns, rows, caption, onRowC
   );
 }
 
-export function Drawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
-  if (!open) return null;
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Dialog focus management (Day 55 a11y QA): moves focus into the panel on open, keeps Tab inside it, closes on
+ * Escape and returns focus to the element that opened it. Shared by Drawer and Modal.
+ */
+function useDialogFocus(onClose: () => void) {
+  const panel = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const node = panel.current;
+    const focusables = () => Array.from(node?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    // Prefer the first field over the close button so keyboard users land on the task.
+    const first = focusables().find((el) => el.getAttribute('aria-label') !== 'Close') ?? focusables()[0] ?? node;
+    first?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return; }
+      if (e.key !== 'Tab' || !node) return;
+      const list = focusables();
+      if (list.length === 0) { e.preventDefault(); node.focus(); return; }
+      const firstEl = list[0]!; const lastEl = list[list.length - 1]!;
+      const active = document.activeElement;
+      if (e.shiftKey && (active === firstEl || !node.contains(active))) { e.preventDefault(); lastEl.focus(); }
+      else if (!e.shiftKey && (active === lastEl || !node.contains(active))) { e.preventDefault(); firstEl.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener && opener.isConnected) opener.focus();
+    };
+  }, []);
+  return panel;
+}
+
+function DrawerPanel({ onClose, title, children }: { onClose: () => void; title: string; children: ReactNode }) {
+  const panel = useDialogFocus(onClose);
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="presentation">
-      <button aria-label="Close panel" className="absolute inset-0 bg-navy-900/40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby="drawer-title" className="relative h-full w-full max-w-lg overflow-y-auto bg-surface p-6 shadow-xl">
+      <button aria-label="Close panel" tabIndex={-1} className="absolute inset-0 bg-navy-900/40" onClick={onClose} />
+      <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="drawer-title" className="relative h-full w-full max-w-lg overflow-y-auto bg-surface p-6 shadow-xl outline-none">
         <div className="mb-4 flex items-center justify-between">
           <h2 id="drawer-title" className="text-lg font-semibold text-navy-900">{title}</h2>
           <Button variant="ghost" onClick={onClose} aria-label="Close">✕</Button>
@@ -135,18 +171,28 @@ export function Drawer({ open, onClose, title, children }: { open: boolean; onCl
   );
 }
 
-export function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
+export function Drawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   if (!open) return null;
+  return <DrawerPanel onClose={onClose} title={title}>{children}</DrawerPanel>;
+}
+
+function ModalPanel({ onClose, title, children, footer }: { onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
+  const panel = useDialogFocus(onClose);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
-      <button aria-label="Close dialog" className="absolute inset-0 bg-navy-900/40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby="modal-title" className="relative w-full max-w-lg rounded-[14px] bg-surface p-6 shadow-xl">
+      <button aria-label="Close dialog" tabIndex={-1} className="absolute inset-0 bg-navy-900/40" onClick={onClose} />
+      <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="modal-title" className="relative w-full max-w-lg rounded-[14px] bg-surface p-6 shadow-xl outline-none">
         <h2 id="modal-title" className="text-lg font-semibold text-navy-900">{title}</h2>
         <div className="mt-4">{children}</div>
         {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
       </div>
     </div>
   );
+}
+
+export function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
+  if (!open) return null;
+  return <ModalPanel onClose={onClose} title={title} footer={footer}>{children}</ModalPanel>;
 }
 
 export function Alert({ tone = 'info', title, children }: { tone?: Tone; title: string; children?: ReactNode }) {

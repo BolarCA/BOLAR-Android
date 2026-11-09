@@ -26,6 +26,7 @@ import { packetExportRouter } from './packet-export/routes.js';
 import { signatureRouter } from './signature/routes.js';
 import { integrationsRouter } from './integrations/routes.js';
 import { storageRouter } from './storage/routes.js';
+import { platformRouter } from './platform/routes.js';
 
 /**
  * Module registry for the modular monolith (blueprint p9/p10). Each domain module exports a
@@ -60,6 +61,7 @@ export const modules: { name: string; router: Router }[] = [
   { name: 'signature', router: signatureRouter },
   { name: 'integrations', router: integrationsRouter },
   { name: 'storage', router: storageRouter },
+  { name: 'platform', router: platformRouter },
 ];
 
 export function registerModules(api: Router): void {
