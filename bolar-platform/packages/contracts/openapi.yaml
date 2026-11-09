@@ -16,6 +16,7 @@ tags:
   - name: health
   - name: iam
   - name: integrations
+<<<<<<< HEAD
   - name: maintenance
   - name: media
   - name: notice
@@ -27,6 +28,13 @@ tags:
   - name: template
   - name: tenant
   - name: vendor
+=======
+  - name: lease
+  - name: sensitive-access
+  - name: signature
+  - name: tenant
+  - name: tenant-profile
+>>>>>>> worktree-agent-a0946239fb8c8050f
 components:
   securitySchemes:
     bearerAuth:
@@ -1566,21 +1574,30 @@ components:
       required:
         - items
         - nextCursor
+<<<<<<< HEAD
     Portfolio:
+=======
+    TenantProfile:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         id:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         name:
           type: string
         ownerUserId:
+=======
+        userId:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           type:
             - string
             - "null"
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         propertyCount:
           type: integer
         createdAt:
@@ -1614,11 +1631,41 @@ components:
           minLength: 1
           maxLength: 120
         ownerUserId:
+=======
+        displayName:
+          type: string
+        email:
+          type:
+            - string
+            - "null"
+        phone:
+          type:
+            - string
+            - "null"
+        dateOfBirth:
+          type:
+            - string
+            - "null"
+        ssnLast4:
+          type:
+            - string
+            - "null"
+        classification:
+          type: string
+        kind:
+          type: string
+          enum: &a9
+            - individual
+            - corporate
+            - occupant
+        businessAccountId:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           type:
             - string
             - "null"
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
     PropertyPage:
       type: object
       properties:
@@ -1992,6 +2039,17 @@ components:
         targetRentCents:
           type: integer
         availableFrom:
+=======
+        status:
+          type: string
+          enum: &a10
+            - prospect
+            - applicant
+            - active
+            - former
+            - blocked
+        notes:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           type:
             - string
             - "null"
@@ -1999,6 +2057,7 @@ components:
           type: string
         updatedAt:
           type: string
+<<<<<<< HEAD
         nextStatuses:
           type: array
           items:
@@ -2052,11 +2111,199 @@ components:
           maximum: 100000000000
           default: 0
         availableFrom:
+=======
+        redactedFields:
+          type: array
+          items:
+            type: string
+        clearedClassification:
+          type: string
+          enum:
+            - public
+            - internal
+            - confidential
+            - restricted
+      required:
+        - id
+        - userId
+        - displayName
+        - email
+        - phone
+        - dateOfBirth
+        - ssnLast4
+        - classification
+        - kind
+        - businessAccountId
+        - status
+        - notes
+        - createdAt
+        - updatedAt
+        - redactedFields
+        - clearedClassification
+    TenantProfilePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantProfile"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ContactMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          type: string
+          enum: &a11
+            - email
+            - phone
+            - mail
+        value:
+          type:
+            - string
+            - "null"
+        isPrimary:
+          type: boolean
+        verifiedAt:
+          type:
+            - string
+            - "null"
+        redactedFields:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - tenantProfileId
+        - kind
+        - value
+        - isPrimary
+        - verifiedAt
+        - redactedFields
+    EmergencyContact:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type:
+            - string
+            - "null"
+        relationship:
+          type: string
+        phone:
+          type:
+            - string
+            - "null"
+        redactedFields:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - tenantProfileId
+        - name
+        - relationship
+        - phone
+        - redactedFields
+    Occupant:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+        relationship:
+          type: string
+          enum: &a12
+            - spouse
+            - child
+            - roommate
+            - employee
+            - other
+        isMinor:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - tenantProfileId
+        - name
+        - relationship
+        - isMinor
+        - createdAt
+    TenantProfileDetail:
+      allOf:
+        - $ref: "#/components/schemas/TenantProfile"
+        - type: object
+          properties:
+            contacts:
+              type: array
+              items:
+                $ref: "#/components/schemas/ContactMethod"
+            emergencyContacts:
+              type: array
+              items:
+                $ref: "#/components/schemas/EmergencyContact"
+            occupants:
+              type: array
+              items:
+                $ref: "#/components/schemas/Occupant"
+            activeLeaseCount:
+              type: integer
+          required:
+            - contacts
+            - emergencyContacts
+            - occupants
+            - activeLeaseCount
+    CreateTenantProfile:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          maxLength: 254
+          format: email
+        phone:
+          type: string
+          minLength: 7
+          maxLength: 32
+        dateOfBirth:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           anyOf:
             - type: string
               format: date-time
             - type: string
               pattern: ^\d{4}-\d{2}-\d{2}$
+<<<<<<< HEAD
         status:
           type: string
           enum:
@@ -2105,12 +2352,96 @@ components:
           minimum: 0
           maximum: 100000000000
         availableFrom:
+=======
+        ssnLast4:
+          type: string
+          pattern: ^\d{4}$
+        kind:
+          type: string
+          enum: *a9
+          default: individual
+        status:
+          type: string
+          enum: *a10
+          default: prospect
+        businessAccountId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        notes:
+          type: string
+          maxLength: 4000
+      required:
+        - displayName
+    TenantProfileSensitive:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        email:
+          type:
+            - string
+            - "null"
+        phone:
+          type:
+            - string
+            - "null"
+        dateOfBirth:
+          type:
+            - string
+            - "null"
+        ssnLast4:
+          type:
+            - string
+            - "null"
+        emergencyContacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmergencyContact"
+        classification:
+          type: string
+      required:
+        - id
+        - email
+        - phone
+        - dateOfBirth
+        - ssnLast4
+        - emergencyContacts
+        - classification
+    UpdateTenantProfile:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type:
+            - string
+            - "null"
+          maxLength: 254
+          format: email
+        phone:
+          type:
+            - string
+            - "null"
+          minLength: 7
+          maxLength: 32
+        dateOfBirth:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           anyOf:
             - type: string
               format: date-time
             - type: string
               pattern: ^\d{4}-\d{2}-\d{2}$
             - type: "null"
+<<<<<<< HEAD
     UnitStatusChange:
       type: object
       properties:
@@ -2137,11 +2468,39 @@ components:
         - toStatus
         - reason
     UnitStatusHistoryPage:
+=======
+        ssnLast4:
+          type:
+            - string
+            - "null"
+          pattern: ^\d{4}$
+        businessAccountId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        notes:
+          type:
+            - string
+            - "null"
+          maxLength: 4000
+        kind:
+          type: string
+          enum: *a9
+        status:
+          type: string
+          enum: *a10
+    ContactMethodList:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         items:
           type: array
           items:
+<<<<<<< HEAD
             $ref: "#/components/schemas/UnitStatusHistory"
         nextCursor:
           type:
@@ -2151,16 +2510,145 @@ components:
         - items
         - nextCursor
     UnitStatusHistory:
+=======
+            $ref: "#/components/schemas/ContactMethod"
+      required:
+        - items
+    CreateContactMethod:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: *a11
+        value:
+          type: string
+          minLength: 3
+          maxLength: 254
+        isPrimary:
+          type: boolean
+          default: false
+      required:
+        - kind
+        - value
+    EmergencyContactList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmergencyContact"
+      required:
+        - items
+    CreateEmergencyContact:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        relationship:
+          type: string
+          minLength: 1
+          maxLength: 60
+        phone:
+          type: string
+          minLength: 7
+          maxLength: 32
+      required:
+        - name
+        - relationship
+        - phone
+    OccupantList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Occupant"
+      required:
+        - items
+    CreateOccupant:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        relationship:
+          type: string
+          enum: *a12
+        isMinor:
+          type: boolean
+          default: false
+      required:
+        - name
+        - relationship
+    LeaseParty:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         id:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
+=======
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        role:
+          type: string
+          enum: &a14
+            - primary
+            - co_tenant
+            - guarantor
+            - occupant
+            - corporate_sponsor
+        signedAt:
+          type:
+            - string
+            - "null"
+        displayName:
+          type: string
+        kind:
+          type: string
+        userId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+      required:
+        - id
+        - leaseId
+        - tenantProfileId
+        - role
+        - signedAt
+        - displayName
+        - kind
+        - userId
+    Lease:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+>>>>>>> worktree-agent-a0946239fb8c8050f
         unitId:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         fromStatus:
           type:
             - string
@@ -2207,6 +2695,63 @@ components:
           type:
             - object
             - "null"
+=======
+        status:
+          type: string
+          enum: &a13
+            - draft
+            - review
+            - approved
+            - sent
+            - signed
+            - active
+            - renewal
+            - terminated
+            - canceled
+        startDate:
+          type: string
+        endDate:
+          type: string
+        rentCents:
+          type: integer
+        depositCents:
+          type: integer
+        currentVersionId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        templateKey:
+          type:
+            - string
+            - "null"
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        unit:
+          type: object
+          properties:
+            id:
+              type: string
+              minLength: 1
+              maxLength: 64
+            unitNumber:
+              type: string
+            status:
+              type: string
+          required:
+            - id
+            - unitNumber
+            - status
+        property:
+          type: object
+>>>>>>> worktree-agent-a0946239fb8c8050f
           properties:
             id:
               type: string
@@ -2214,6 +2759,7 @@ components:
               maxLength: 64
             name:
               type: string
+<<<<<<< HEAD
           required:
             - id
             - name
@@ -2248,6 +2794,53 @@ components:
         - unitCounts
         - truncated
     ApplicationLookups:
+=======
+            city:
+              type: string
+            state:
+              type: string
+          required:
+            - id
+            - name
+            - city
+            - state
+        parties:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaseParty"
+      required:
+        - id
+        - propertyId
+        - unitId
+        - status
+        - startDate
+        - endDate
+        - rentCents
+        - depositCents
+        - currentVersionId
+        - templateKey
+        - createdBy
+        - createdAt
+        - updatedAt
+        - unit
+        - property
+        - parties
+    LeasePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lease"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    LeaseFormOptions:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         properties:
@@ -2261,6 +2854,7 @@ components:
                 maxLength: 64
               name:
                 type: string
+<<<<<<< HEAD
               city:
                 type: string
               state:
@@ -2271,6 +2865,240 @@ components:
               - city
               - state
         applicants:
+=======
+              units:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                      maxLength: 64
+                    unitNumber:
+                      type: string
+                    status:
+                      type: string
+                    targetRentCents:
+                      type: integer
+                  required:
+                    - id
+                    - unitNumber
+                    - status
+                    - targetRentCents
+            required:
+              - id
+              - name
+              - units
+      required:
+        - properties
+    RecurringCharge:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        type:
+          type: string
+          enum: &a15
+            - rent
+            - parking
+            - pet
+            - utility
+            - storage
+            - fee
+        amountCents:
+          type: integer
+        cadence:
+          type: string
+          enum: &a16
+            - monthly
+            - weekly
+            - one_time
+        startsOn:
+          type:
+            - string
+            - "null"
+        endsOn:
+          type:
+            - string
+            - "null"
+        accountCode:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - leaseId
+        - type
+        - amountCents
+        - cadence
+        - startsOn
+        - endsOn
+        - accountCode
+    LeaseVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        version:
+          type: integer
+        termsJson:
+          type: object
+          additionalProperties: {}
+        documentId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+      required:
+        - id
+        - leaseId
+        - version
+        - termsJson
+        - documentId
+        - createdBy
+        - createdAt
+    LeaseTransitionOption:
+      type: object
+      properties:
+        to:
+          type: string
+          enum: *a13
+        allowed:
+          type: boolean
+        reason:
+          type:
+            - string
+            - "null"
+      required:
+        - to
+        - allowed
+        - reason
+    LeaseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        unitId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        status:
+          type: string
+          enum: *a13
+        startDate:
+          type: string
+        endDate:
+          type: string
+        rentCents:
+          type: integer
+        depositCents:
+          type: integer
+        currentVersionId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        templateKey:
+          type:
+            - string
+            - "null"
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        unit:
+          type: object
+          properties:
+            id:
+              type: string
+              minLength: 1
+              maxLength: 64
+            unitNumber:
+              type: string
+            status:
+              type: string
+          required:
+            - id
+            - unitNumber
+            - status
+        property:
+          type: object
+          properties:
+            id:
+              type: string
+              minLength: 1
+              maxLength: 64
+            name:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+          required:
+            - id
+            - name
+            - city
+            - state
+        parties:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaseParty"
+        charges:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringCharge"
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaseVersion"
+        currentVersion:
+          allOf:
+            - $ref: "#/components/schemas/LeaseVersion"
+            - type:
+                - object
+                - "null"
+        transitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaseTransitionOption"
+        allowedNextStates:
+          type: array
+          items:
+            type: string
+            enum: *a13
+        overlaps:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           type: array
           items:
             type: object
@@ -2279,6 +3107,7 @@ components:
                 type: string
                 minLength: 1
                 maxLength: 64
+<<<<<<< HEAD
               displayName:
                 type: string
               status:
@@ -2358,10 +3187,25 @@ components:
           type: string
         propertyName:
           type: string
+=======
+              status:
+                type: string
+                enum: *a13
+              startDate:
+                type: string
+              endDate:
+                type: string
+            required:
+              - id
+              - status
+              - startDate
+              - endDate
+>>>>>>> worktree-agent-a0946239fb8c8050f
       required:
         - id
         - propertyId
         - unitId
+<<<<<<< HEAD
         - applicantId
         - status
         - submittedAt
@@ -2370,6 +3214,38 @@ components:
         - createdAt
         - updatedAt
     CreateApplication:
+=======
+        - status
+        - startDate
+        - endDate
+        - rentCents
+        - depositCents
+        - currentVersionId
+        - templateKey
+        - createdBy
+        - createdAt
+        - updatedAt
+        - unit
+        - property
+        - parties
+        - charges
+        - versions
+        - currentVersion
+        - transitions
+        - allowedNextStates
+        - overlaps
+    LeaseTerms:
+      type: object
+      additionalProperties:
+        anyOf:
+          - type: string
+            maxLength: 2000
+          - type: number
+          - type: boolean
+          - type: "null"
+          - type: "null"
+    CreateLease:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         propertyId:
@@ -2380,6 +3256,7 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         applicantId:
           type: string
           minLength: 1
@@ -2789,10 +3666,82 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+=======
+        startDate:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        endDate:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        rentCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+        depositCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+          default: 0
+        templateKey:
+          type: string
+          maxLength: 80
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        termsJson:
+          $ref: "#/components/schemas/LeaseTerms"
+      required:
+        - propertyId
+        - unitId
+        - startDate
+        - endDate
+        - rentCents
+    UpdateLease:
+      type: object
+      properties:
+        startDate:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        endDate:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        rentCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+        depositCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+        templateKey:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+    CreateLeaseVersion:
+      type: object
+      properties:
+        termsJson:
+          $ref: "#/components/schemas/LeaseTerms"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         documentId:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         version:
           type: integer
         fileName:
@@ -3955,10 +4904,61 @@ components:
             - "null"
           format: date-time
     TransitionWorkOrder:
+=======
+      required:
+        - termsJson
+    AddLeaseParty:
+      type: object
+      properties:
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        role:
+          type: string
+          enum: *a14
+          default: co_tenant
+      required:
+        - tenantProfileId
+    AddRecurringCharge:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: *a15
+        amountCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+        cadence:
+          type: string
+          enum: *a16
+          default: monthly
+        startsOn:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        endsOn:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        accountCode:
+          type: string
+          maxLength: 16
+      required:
+        - type
+        - amountCents
+    TransitionLease:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         to:
           type: string
+<<<<<<< HEAD
           enum:
             - new
             - triaged
@@ -4424,6 +5424,54 @@ components:
           format: email
       required:
         - email
+=======
+          enum: *a13
+        note:
+          type: string
+          maxLength: 2000
+        signedAt:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        activate:
+          type: boolean
+      required:
+        - to
+    UnitOccupancy:
+      type: object
+      properties:
+        unitId:
+          type: string
+        status:
+          type: string
+        leases:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 64
+              status:
+                type: string
+                enum: *a13
+              startDate:
+                type: string
+              endDate:
+                type: string
+            required:
+              - id
+              - status
+              - startDate
+              - endDate
+      required:
+        - unitId
+        - status
+        - leases
+>>>>>>> worktree-agent-a0946239fb8c8050f
     WebhookOutcome:
       type: object
       properties:
@@ -4435,6 +5483,7 @@ components:
             - ignored
       required:
         - outcome
+<<<<<<< HEAD
     LedgerAccountPage:
       type: object
       properties:
@@ -4524,10 +5573,14 @@ components:
         - name
         - type
     UpdateLedgerAccount:
+=======
+    EnvelopeRecipient:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         name:
           type: string
+<<<<<<< HEAD
           minLength: 1
           maxLength: 120
         type:
@@ -5154,12 +6207,28 @@ components:
             - tenant
             - journalEntryIds
     InvoiceLine:
+=======
+        email:
+          type: string
+        role:
+          type: string
+        tenantProfileId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - name
+        - email
+        - role
+    SignatureEnvelope:
+>>>>>>> worktree-agent-a0946239fb8c8050f
       type: object
       properties:
         id:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         description:
           type: string
         accountCode:
@@ -5214,10 +6283,15 @@ components:
             - canceled
         amountCents:
           type: integer
+=======
+        provider:
+          type: string
+>>>>>>> worktree-agent-a0946239fb8c8050f
         externalId:
           type:
             - string
             - "null"
+<<<<<<< HEAD
         failureReason:
           type:
             - string
@@ -5246,10 +6320,13 @@ components:
     CreateInvoice:
       type: object
       properties:
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
         leaseId:
           type: string
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         dueDate:
           anyOf:
             - type: string
@@ -5601,11 +6678,15 @@ components:
             - string
             - "null"
         approvedBy:
+=======
+        leaseVersionId:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           type:
             - string
             - "null"
           minLength: 1
           maxLength: 64
+<<<<<<< HEAD
         createdAt:
           type: string
       required:
@@ -6298,6 +7379,9 @@ components:
           minLength: 1
           maxLength: 64
         leaseId:
+=======
+        documentVersionId:
+>>>>>>> worktree-agent-a0946239fb8c8050f
           type:
             - string
             - "null"
@@ -6306,6 +7390,7 @@ components:
         status:
           type: string
           enum:
+<<<<<<< HEAD
             - draft
             - pending_approval
             - approved
@@ -6341,10 +7426,27 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+=======
+            - created
+            - sent
+            - delivered
+            - completed
+            - declined
+            - voided
+        recipients:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnvelopeRecipient"
+        lastEventId:
+          type:
+            - string
+            - "null"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         createdAt:
           type: string
         updatedAt:
           type: string
+<<<<<<< HEAD
         recipientName:
           type: string
       required:
@@ -6475,6 +7577,45 @@ components:
             - key
             - sizeBytes
             - sha256
+=======
+      required:
+        - id
+        - provider
+        - externalId
+        - leaseId
+        - leaseVersionId
+        - documentVersionId
+        - status
+        - recipients
+        - lastEventId
+        - createdAt
+        - updatedAt
+    SignatureEnvelopeList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignatureEnvelope"
+      required:
+        - items
+    CreateEnvelope:
+      type: object
+      properties:
+        documentVersionId:
+          type: string
+          minLength: 1
+          maxLength: 64
+    VoidEnvelope:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+      required:
+        - reason
+>>>>>>> worktree-agent-a0946239fb8c8050f
   parameters: {}
 paths:
   /health:
@@ -9107,6 +10248,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /portfolios:
     get:
       operationId: listPortfolios
@@ -9117,6 +10259,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: property:read
+=======
+  /tenant-profiles:
+    get:
+      operationId: listTenantProfiles
+      summary: List tenant profiles (confidential/restricted fields redacted to the viewer clearance)
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:read
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -9135,6 +10289,21 @@ paths:
           in: query
         - schema:
             type: string
+<<<<<<< HEAD
+=======
+            enum: *a10
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            enum: *a9
+          required: false
+          name: kind
+          in: query
+        - schema:
+            type: string
+>>>>>>> worktree-agent-a0946239fb8c8050f
             maxLength: 100
           required: false
           name: q
@@ -9143,14 +10312,20 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -9159,7 +10334,11 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/PortfolioPage"
+=======
+                $ref: "#/components/schemas/TenantProfilePage"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -9191,6 +10370,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
     post:
+<<<<<<< HEAD
       operationId: createPortfolio
       summary: Create a portfolio
       tags:
@@ -9199,34 +10379,58 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: property:write
+=======
+      operationId: createTenantProfile
+      summary: Create a tenant profile
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/CreatePortfolio"
+=======
+              $ref: "#/components/schemas/CreateTenantProfile"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "201":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/Portfolio"
+=======
+                $ref: "#/components/schemas/TenantProfileDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -9257,6 +10461,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /portfolios/{id}:
     get:
       operationId: getPortfolio
@@ -9267,6 +10472,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: property:read
+=======
+  /tenant-profiles/{id}:
+    get:
+      operationId: getTenantProfile
+      summary: Tenant profile detail; restricted fields are nulled unless the sensitive gate passes (tenants may read their own)
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -9280,14 +10497,20 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -9296,7 +10519,11 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/Portfolio"
+=======
+                $ref: "#/components/schemas/TenantProfileDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -9328,6 +10555,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
     patch:
+<<<<<<< HEAD
       operationId: updatePortfolio
       summary: Update a portfolio
       tags:
@@ -9336,6 +10564,16 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: property:write
+=======
+      operationId: updateTenantProfile
+      summary: Update a tenant profile
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -9349,28 +10587,42 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/UpdatePortfolio"
+=======
+              $ref: "#/components/schemas/UpdateTenantProfile"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "200":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/Portfolio"
+=======
+                $ref: "#/components/schemas/TenantProfileDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -9401,6 +10653,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /properties:
     get:
       operationId: listProperties
@@ -9411,11 +10664,24 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: property:read
+=======
+  /tenant-profiles/{id}/sensitive:
+    get:
+      operationId: getTenantProfileSensitive
+      summary: Full sensitive fields; 403 review_required until an approved purpose exists
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
             type: string
             minLength: 1
+<<<<<<< HEAD
           required: false
           name: cursor
           in: query
@@ -9477,18 +10743,30 @@ paths:
           required: false
           name: includeArchived
           in: query
+=======
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+>>>>>>> worktree-agent-a0946239fb8c8050f
         - schema:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -9497,7 +10775,79 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/PropertyPage"
+=======
+                $ref: "#/components/schemas/TenantProfileSensitive"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /tenant-profiles/{id}/contacts:
+    get:
+      operationId: listContactMethods
+      summary: Contact methods for a tenant profile
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactMethodList"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -9529,6 +10879,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
     post:
+<<<<<<< HEAD
       operationId: createProperty
       summary: Create a property
       tags:
@@ -9537,33 +10888,63 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: property:write
+=======
+      operationId: addContactMethod
+      summary: Add a contact method
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
             type: string
+<<<<<<< HEAD
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/CreateProperty"
+=======
+              $ref: "#/components/schemas/CreateContactMethod"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "201":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/Property"
         "400":
           description: Validation error
@@ -11955,6 +13336,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentDetail"
+=======
+                $ref: "#/components/schemas/ContactMethod"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -11985,6 +13369,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
     delete:
       operationId: deleteDocument
       summary: Soft-delete a document (blocked under legal hold)
@@ -11994,6 +13379,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: mfa
       x-bolar-permission: document:write
+=======
+  /tenant-profiles/{id}/contacts/{subId}:
+    delete:
+      operationId: removeContactMethod
+      summary: Remove a contact method
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -12005,16 +13402,31 @@ paths:
           in: path
         - schema:
             type: string
+<<<<<<< HEAD
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: subId
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -12050,6 +13462,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /documents/{id}/versions:
     post:
       operationId: createDocumentVersion
@@ -12060,6 +13473,17 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: document:write
+=======
+  /tenant-profiles/{id}/emergency-contacts:
+    get:
+      operationId: listEmergencyContacts
+      summary: Emergency contacts (confidential; redacted without clearance)
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -12073,27 +13497,106 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
-          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyContactList"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: addEmergencyContact
+      summary: Add an emergency contact
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+<<<<<<< HEAD
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/CreateDocumentVersion"
+=======
+              $ref: "#/components/schemas/CreateEmergencyContact"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "201":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/CreateDocumentVersionResponse"
         "400":
           description: Validation error
@@ -12556,6 +14059,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MediaAsset"
+=======
+                $ref: "#/components/schemas/EmergencyContact"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -12586,6 +14092,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
     delete:
       operationId: deleteMedia
       summary: Delete a media asset (uploader or staff in scope)
@@ -12595,6 +14102,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: media:write
+=======
+  /tenant-profiles/{id}/emergency-contacts/{subId}:
+    delete:
+      operationId: removeEmergencyContact
+      summary: Remove an emergency contact
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -12606,16 +14125,31 @@ paths:
           in: path
         - schema:
             type: string
+<<<<<<< HEAD
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: subId
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -12651,6 +14185,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /media/{id}/download:
     get:
       operationId: getMediaDownloadUrl
@@ -12661,6 +14196,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: media:read
+=======
+  /tenant-profiles/{id}/occupants:
+    get:
+      operationId: listOccupants
+      summary: Occupants attached to a tenant profile
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -12674,14 +14221,20 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -12690,7 +14243,11 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/DownloadUrl"
+=======
+                $ref: "#/components/schemas/OccupantList"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -12721,6 +14278,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /notifications:
     get:
       operationId: listNotifications
@@ -12731,6 +14289,161 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: null
+=======
+    post:
+      operationId: addOccupant
+      summary: Add an occupant
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOccupant"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Occupant"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /tenant-profiles/{id}/occupants/{subId}:
+    delete:
+      operationId: removeOccupant
+      summary: Remove an occupant
+      tags:
+        - tenant-profile
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: tenant_profile:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: subId
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /leases:
+    get:
+      operationId: listLeases
+      summary: List leases visible to the actor (tenants see only leases they are a party to)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:read
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -12749,17 +14462,22 @@ paths:
           in: query
         - schema:
             type: string
+<<<<<<< HEAD
             enum:
               - queued
               - sent
               - delivered
               - failed
               - suppressed
+=======
+            enum: *a13
+>>>>>>> worktree-agent-a0946239fb8c8050f
           required: false
           name: status
           in: query
         - schema:
             type: string
+<<<<<<< HEAD
             enum:
               - email
               - sms
@@ -13814,6 +15532,8 @@ paths:
           in: query
         - schema:
             type: string
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
             minLength: 1
             maxLength: 64
           required: false
@@ -13824,13 +15544,18 @@ paths:
             minLength: 1
             maxLength: 64
           required: false
+<<<<<<< HEAD
           name: assignedVendorId
+=======
+          name: unitId
+>>>>>>> worktree-agent-a0946239fb8c8050f
           in: query
         - schema:
             type: string
             minLength: 1
             maxLength: 64
           required: false
+<<<<<<< HEAD
           name: assignedUserId
           in: query
         - schema:
@@ -13862,19 +15587,28 @@ paths:
             maxLength: 100
           required: false
           name: q
+=======
+          name: tenantProfileId
+>>>>>>> worktree-agent-a0946239fb8c8050f
           in: query
         - schema:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -13883,7 +15617,11 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/WorkOrderPage"
+=======
+                $ref: "#/components/schemas/LeasePage"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -13914,6 +15652,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /work-orders/sla/scan:
     post:
       operationId: scanWorkOrderSla
@@ -13924,29 +15663,59 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: work_order:write
+=======
+    post:
+      operationId: createLease
+      summary: Create a draft lease with property/unit/tenant validation and overlap enforcement
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
         "200":
+=======
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLease"
+      responses:
+        "201":
+>>>>>>> worktree-agent-a0946239fb8c8050f
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/SlaScanResponse"
+=======
+                $ref: "#/components/schemas/LeaseDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -13977,6 +15746,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /work-orders/{id}:
     get:
       operationId: getWorkOrder
@@ -13987,6 +15757,161 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: work_order:read
+=======
+  /leases/form-options:
+    get:
+      operationId: getLeaseFormOptions
+      summary: Properties and units the actor may draft leases for (create drawer pickers)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaseFormOptions"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /leases/{id}/timeline:
+    get:
+      operationId: getLeaseTimeline
+      summary: Audit timeline for a lease (transitions, versions, envelopes)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /leases/{id}:
+    get:
+      operationId: getLease
+      summary: Lease detail with parties, charges, versions and allowed next states for the actor
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:read
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -14000,14 +15925,20 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -14016,7 +15947,11 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/WorkOrderDetail"
+=======
+                $ref: "#/components/schemas/LeaseDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -14048,6 +15983,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
     patch:
+<<<<<<< HEAD
       operationId: updateWorkOrder
       summary: Update staff-editable fields (priority recomputes the SLA)
       tags:
@@ -14056,6 +15992,16 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: work_order:write
+=======
+      operationId: updateLease
+      summary: Update a draft lease (dates, rent, deposit, template)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:write
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -14069,28 +16015,42 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/UpdateWorkOrder"
+=======
+              $ref: "#/components/schemas/UpdateLease"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "200":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/WorkOrder"
+=======
+                $ref: "#/components/schemas/LeaseDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -14121,6 +16081,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /work-orders/{id}/transition:
     post:
       operationId: transitionWorkOrder
@@ -14130,6 +16091,236 @@ paths:
       security:
         - bearerAuth: []
       x-bolar-auth: session
+=======
+  /leases/{id}/versions:
+    post:
+      operationId: createLeaseVersion
+      summary: Add a new terms version (draft or renewal) and make it current
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLeaseVersion"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaseVersion"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /leases/{id}/parties:
+    post:
+      operationId: addLeaseParty
+      summary: Add a tenant profile as a party (primary, co-tenant, guarantor, occupant, corporate sponsor)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddLeaseParty"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaseParty"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /leases/{id}/charges:
+    post:
+      operationId: addRecurringCharge
+      summary: Add a recurring charge to a lease
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddRecurringCharge"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringCharge"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /leases/{id}/transition:
+    post:
+      operationId: transitionLease
+      summary: Move a lease through its lifecycle (draft/review/approved/sent/signed/active/renewal/terminated/canceled)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-permission: null
       x-bolar-idempotent: false
       parameters:
@@ -14144,28 +16335,42 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/TransitionWorkOrder"
+=======
+              $ref: "#/components/schemas/TransitionLease"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "200":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/WorkOrderDetail"
+=======
+                $ref: "#/components/schemas/LeaseDetail"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -14196,6 +16401,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /work-orders/{id}/assign:
     post:
       operationId: assignWorkOrder
@@ -14356,6 +16562,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: work_order:read
+=======
+  /units/{id}/occupancy:
+    get:
+      operationId: getUnitOccupancy
+      summary: Occupying leases for a unit (overlap preview for the create drawer)
+      tags:
+        - lease
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:read
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -14367,6 +16585,7 @@ paths:
           in: path
         - schema:
             type: string
+<<<<<<< HEAD
             minLength: 1
           required: false
           name: cursor
@@ -14378,19 +16597,34 @@ paths:
             default: 25
           required: false
           name: limit
+=======
+          required: false
+          name: startDate
+          in: query
+        - schema:
+            type: string
+          required: false
+          name: endDate
+>>>>>>> worktree-agent-a0946239fb8c8050f
           in: query
         - schema:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -14399,6 +16633,7 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/WorkOrderEventPage"
         "400":
           description: Validation error
@@ -15323,6 +17558,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkOrderPage"
+=======
+                $ref: "#/components/schemas/UnitOccupancy"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -15397,6 +17635,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /accounts:
     get:
       operationId: listAccounts
@@ -15407,11 +17646,24 @@ paths:
         - bearerAuth: []
       x-bolar-auth: session
       x-bolar-permission: finance:read
+=======
+  /leases/{id}/envelopes:
+    get:
+      operationId: listLeaseEnvelopes
+      summary: E-sign envelopes for a lease
+      tags:
+        - signature
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: lease:read
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
             type: string
             minLength: 1
+<<<<<<< HEAD
           required: false
           name: cursor
           in: query
@@ -15440,18 +17692,30 @@ paths:
           required: false
           name: q
           in: query
+=======
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+>>>>>>> worktree-agent-a0946239fb8c8050f
         - schema:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       responses:
@@ -15460,7 +17724,11 @@ paths:
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/LedgerAccountPage"
+=======
+                $ref: "#/components/schemas/SignatureEnvelopeList"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -15492,6 +17760,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
     post:
+<<<<<<< HEAD
       operationId: createAccount
       summary: Create a ledger account (code unique per org, 4 digits)
       tags:
@@ -15500,34 +17769,67 @@ paths:
         - bearerAuth: []
       x-bolar-auth: mfa
       x-bolar-permission: finance:write
+=======
+      operationId: createLeaseEnvelope
+      summary: Send the current lease version for e-signature (moves an approved lease to sent)
+      tags:
+        - signature
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: lease:send
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
             type: string
+<<<<<<< HEAD
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/CreateLedgerAccount"
+=======
+              $ref: "#/components/schemas/CreateEnvelope"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "201":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/LedgerAccount"
+=======
+                $ref: "#/components/schemas/SignatureEnvelope"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -15558,6 +17860,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /accounts/{id}:
     patch:
       operationId: updateAccount
@@ -15568,6 +17871,18 @@ paths:
         - bearerAuth: []
       x-bolar-auth: mfa
       x-bolar-permission: finance:write
+=======
+  /envelopes/{id}/void:
+    post:
+      operationId: voidEnvelope
+      summary: Void an envelope; a sent lease reopens as draft with the reason noted
+      tags:
+        - signature
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: lease:send
+>>>>>>> worktree-agent-a0946239fb8c8050f
       x-bolar-idempotent: false
       parameters:
         - schema:
@@ -15581,28 +17896,42 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+<<<<<<< HEAD
           description: Target org slug/id; platform actors only. Defaults to the token org.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+<<<<<<< HEAD
           description: Declared purpose for sensitive data access.
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
           name: X-Access-Purpose
           in: header
       requestBody:
         content:
           application/json:
             schema:
+<<<<<<< HEAD
               $ref: "#/components/schemas/UpdateLedgerAccount"
+=======
+              $ref: "#/components/schemas/VoidEnvelope"
+>>>>>>> worktree-agent-a0946239fb8c8050f
       responses:
         "200":
           description: Success response (X-Request-Id header set)
           content:
             application/json:
               schema:
+<<<<<<< HEAD
                 $ref: "#/components/schemas/LedgerAccount"
+=======
+                $ref: "#/components/schemas/SignatureEnvelope"
+>>>>>>> worktree-agent-a0946239fb8c8050f
         "400":
           description: Validation error
           content:
@@ -15633,6 +17962,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+<<<<<<< HEAD
   /accounts/seed-default:
     post:
       operationId: seedDefaultAccounts
@@ -19291,4 +21621,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+=======
+>>>>>>> worktree-agent-a0946239fb8c8050f
 webhooks: {}

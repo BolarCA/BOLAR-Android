@@ -1118,6 +1118,7 @@ model SignatureEnvelope {
   provider    String // mock | docusign
   externalId  String?
   leaseId     String
+  leaseVersionId    String? // lease version the envelope was generated from (Day 57)
   documentVersionId String?
   status      String    @default("created") // created | sent | delivered | completed | declined | voided
   recipients  Json      @default("[]")
