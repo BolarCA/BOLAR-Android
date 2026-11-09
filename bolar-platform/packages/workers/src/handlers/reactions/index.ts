@@ -6,4 +6,5 @@ import './maintenance.js';
 import './lease.js';
 import './governance.js';
 import './ai.js';
+import './reporting.js';
 export {};

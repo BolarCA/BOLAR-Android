@@ -36,6 +36,8 @@ const TAG_DESCRIPTIONS: Record<string, string> = {
   'packet-export': 'Evidence packet and audit exports',
   integrations: 'Inbound provider webhooks',
   platform: 'Platform control plane: health, feature flags, support sessions',
+  ai: 'Assistant commands, threads, tool calls, audit and budget',
+  reporting: 'Governed KPIs, rent roll, aging, occupancy, SLA, collections, scheduled reports',
 };
 const registry = new OpenAPIRegistry();
 registry.registerComponent('securitySchemes', 'bearerAuth', { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' });
