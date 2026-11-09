@@ -186,7 +186,7 @@ export const leaseRoutes = [
       await requireAccess(ctx, 'lease:read', { type: 'unit', id: unit.id, propertyId: unit.propertyId, subaccountId: unit.property.subaccountId }, ['manages', 'owner_of', 'tenant_of']);
       const leases = query.startDate && query.endDate
         ? await findOverlaps(ctx, unit.id, parseDate(query.startDate), parseDate(query.endDate))
-        : await tenantDb(ctx).lease.findMany({ where: { unitId: unit.id, status: { in: [...LEASE_OCCUPYING_STATES] } }, select: { id: true, status: true, startDate: true, endDate: true }, orderBy: { startDate: 'asc' } });
+        : await tenantDb(ctx).lease.findMany({ where: { unitId: unit.id, status: { in: [...LEASE_OCCUPYING_STATES] } }, select: { id: true, status: true, startDate: true, endDate: true }, orderBy: { startDate: 'asc' }, take: 50 });
       return { body: { unitId: unit.id, status: unit.status, leases: toDto(leases) } };
     } }),
 ];

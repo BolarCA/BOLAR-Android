@@ -8,7 +8,7 @@ export interface SweepResult { scanned: number; proposed: number; held: number; 
 
 /** Platform defaults plus org overrides; an org policy with the same key shadows the platform default. */
 export async function effectivePolicies(tenantOrgId: string) {
-  const rows = await prisma.retentionPolicy.findMany({ where: { OR: [{ tenantOrgId: null }, { tenantOrgId }] }, orderBy: [{ key: 'asc' }, { tenantOrgId: 'desc' }] });
+  const rows = await prisma.retentionPolicy.findMany({ where: { OR: [{ tenantOrgId: null }, { tenantOrgId }] }, orderBy: [{ key: 'asc' }, { tenantOrgId: 'desc' }], take: 500 });
   const byKey = new Map<string, (typeof rows)[number]>();
   for (const r of rows) {
     const existing = byKey.get(r.key);

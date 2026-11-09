@@ -74,6 +74,6 @@ export async function ruleCreatorId(ruleId: string): Promise<string | null> {
 
 /** Unresolved block evaluations prevent a resource from moving forward (notice submit, etc.). */
 export async function unresolvedBlocks(ctx: RequestContext, resourceType: string, resourceId: string): Promise<string[]> {
-  const rows = await tenantDb(ctx).ruleEvaluation.findMany({ where: { resourceType, resourceId, result: 'block', reviewedAt: null }, select: { ruleKey: true } });
+  const rows = await tenantDb(ctx).ruleEvaluation.findMany({ where: { resourceType, resourceId, result: 'block', reviewedAt: null }, select: { ruleKey: true }, take: 100 });
   return rows.map((r) => r.ruleKey);
 }

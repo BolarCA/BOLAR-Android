@@ -135,7 +135,7 @@ const DEBIT_NORMAL = new Set(['asset', 'expense']);
 export async function trialBalance(ctx: RequestContext) {
   const tenantOrgId = ctx.tenantOrgId!;
   const sums = await prisma.ledgerEntry.groupBy({ by: ['accountId'], where: { tenantOrgId, journalEntry: { postedAt: { not: null } } }, _sum: { debitCents: true, creditCents: true } });
-  const accounts = await prisma.account.findMany({ where: { tenantOrgId }, orderBy: { code: 'asc' } });
+  const accounts = await prisma.account.findMany({ where: { tenantOrgId }, orderBy: { code: 'asc' }, take: 1000 });
   const byId = new Map(sums.map((s) => [s.accountId, s._sum]));
   const rows = accounts.map((a) => {
     const s = byId.get(a.id);

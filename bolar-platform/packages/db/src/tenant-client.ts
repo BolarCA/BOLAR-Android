@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { errors } from '@bolar/shared';
+import { withTenantRls } from './rls.js';
 
 /** Models that carry tenantOrgId, derived from the DMMF so new models are covered automatically. */
 export const TENANT_SCOPED_MODELS: ReadonlySet<string> = new Set(
@@ -26,15 +27,38 @@ function withTenantData(args: AnyArgs, tenantOrgId: string): AnyArgs {
  * Every read is filtered by tenantOrgId, every create stamps it, and unique
  * lookups/updates/deletes for another tenant's row behave as not-found.
  */
-export function forTenant(client: PrismaClient, tenantOrgId: string) {
+export interface ForTenantOptions {
+  /**
+   * Opt-in row-level security (ADR 0005, DB_RLS_ENFORCE=1): reads (findMany/findFirst/findFirstOrThrow/count/
+   * aggregate/groupBy) run inside a transaction that sets `app.tenant_id`, so PostgreSQL policies filter rows
+   * even if the where-clause injection were bypassed. Writes keep the application-level stamping; the DB policy's
+   * WITH CHECK still rejects cross-tenant rows when the connection role is subject to RLS.
+   */
+  rls?: boolean;
+}
+
+const RLS_READ_OPERATIONS = new Set(['findMany', 'findFirst', 'findFirstOrThrow', 'count', 'aggregate', 'groupBy']);
+
+export function forTenant(client: PrismaClient, tenantOrgId: string, options: ForTenantOptions = {}) {
   if (!tenantOrgId) throw errors.forbidden('Tenant context missing');
+  const rls = options.rls === true;
   return client.$extends({
-    name: `tenant:${tenantOrgId}`,
+    name: `tenant:${tenantOrgId}${rls ? ':rls' : ''}`,
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           if (!model || !TENANT_SCOPED_MODELS.has(model)) return query(args);
           const a = (args ?? {}) as AnyArgs;
+          if (rls && RLS_READ_OPERATIONS.has(operation)) {
+            // Defense in depth: same tenant where-clause, executed under SET LOCAL app.tenant_id.
+            const scoped = withTenantWhere(a, tenantOrgId);
+            return withTenantRls(client, tenantOrgId, async (tx) => {
+              const delegate = (tx as unknown as Record<string, Record<string, (x: unknown) => Promise<unknown>>>)[model.charAt(0).toLowerCase() + model.slice(1)];
+              const op = delegate?.[operation];
+              if (!op) throw new Error(`RLS read: no delegate for ${model}.${operation}`);
+              return op.call(delegate, scoped);
+            });
+          }
           switch (operation) {
             case 'findMany':
             case 'findFirst':

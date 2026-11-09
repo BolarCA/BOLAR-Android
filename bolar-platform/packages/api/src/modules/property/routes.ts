@@ -310,7 +310,7 @@ export const propertyRoutes: RouteDef[] = [
       const db = tenantDb(ctx);
       const [pf, buildings, units, counts] = await Promise.all([
         prop.portfolioId ? db.portfolio.findFirst({ where: { id: prop.portfolioId }, select: { id: true, name: true } }) : Promise.resolve(null),
-        db.building.findMany({ where: { propertyId: prop.id }, orderBy: { createdAt: 'asc' } }),
+        db.building.findMany({ where: { propertyId: prop.id }, orderBy: { createdAt: 'asc' }, take: 100 }),
         db.unit.findMany({ where: { propertyId: prop.id }, orderBy: [{ unitNumber: 'asc' }, { id: 'asc' }], take: HIERARCHY_UNIT_CAP + 1 }),
         unitCountsFor(ctx, [prop.id]),
       ]);

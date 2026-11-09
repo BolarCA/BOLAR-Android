@@ -65,7 +65,7 @@ export const documentRoutes: RouteDef[] = [
     handler: async ({ params, ctx }) => {
       const { doc } = await loadDocument(ctx, params.id, 'document:read');
       await requireDocumentClearance(ctx, doc);
-      const versions = await tenantDb(ctx).documentVersion.findMany({ where: { documentId: doc.id }, orderBy: { version: 'desc' } });
+      const versions = await tenantDb(ctx).documentVersion.findMany({ where: { documentId: doc.id }, orderBy: { version: 'desc' }, take: 100 });
       return { body: { ...documentDto(doc), versions: versions.map(versionDto) } };
     } }),
 
@@ -88,7 +88,7 @@ export const documentRoutes: RouteDef[] = [
       if (!version) throw errors.notFound();
       await finalizeVersion(ctx, doc, version, body?.sha256);
       const fresh = await db.document.findFirstOrThrow({ where: { id: doc.id } });
-      const versions = await db.documentVersion.findMany({ where: { documentId: doc.id }, orderBy: { version: 'desc' } });
+      const versions = await db.documentVersion.findMany({ where: { documentId: doc.id }, orderBy: { version: 'desc' }, take: 100 });
       return { status: 200, body: { ...documentDto(fresh), versions: versions.map(versionDto) } };
     } }),
 

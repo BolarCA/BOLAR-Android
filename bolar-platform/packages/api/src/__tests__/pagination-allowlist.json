@@ -1,0 +1,42 @@
+[
+  {
+    "file": "document/owner-access.ts",
+    "model": "property",
+    "reason": "Owner scope computation: properties inside the owner's portfolios, consumed as an id list for ReBAC scoping; bounded by the owner's holdings. Follow-up: push scoping into SQL (docs/qa/hardening-qa.md)."
+  },
+  {
+    "file": "finance/invoice/service.ts",
+    "model": "lease",
+    "reason": "Monthly invoice generation iterates every active lease of the org once per period (idempotent per lease/period, triggered by a manager action or the scheduler). Follow-up: chunk by cursor when an org exceeds a few thousand active leases."
+  },
+  {
+    "file": "finance/invoice/service.ts",
+    "model": "invoice",
+    "reason": "Aging summary aggregates outstanding invoices with a 3-column select; to be replaced by SQL aggregation (groupBy) when volume warrants."
+  },
+  {
+    "file": "finance/payment/routes.ts",
+    "model": "invoice",
+    "reason": "Finance summary KPI aggregates outstanding invoices with a 4-column select; same follow-up as the aging summary."
+  },
+  {
+    "file": "lease/service.ts",
+    "model": "relationshipEdge",
+    "reason": "ReBAC edges of the current actor: `base` carries subjectType=user and subjectId=ctx.actor.userId, so the set is the actor's own relationships."
+  },
+  {
+    "file": "legal-hold/service.ts",
+    "model": "document",
+    "reason": "Legal-hold flagging walks every document in the hold scope (select id only) so each is marked held; governance batch, not a user-facing list."
+  },
+  {
+    "file": "packet-export/service.ts",
+    "model": "lease",
+    "reason": "Packet export collects all leases of the exported property inside a worker job; output is written to storage, not returned as a page."
+  },
+  {
+    "file": "retention/service.ts",
+    "model": "tenantOrg",
+    "reason": "Scheduled retention sweep iterates all orgs (select id) once a day; org count is small by construction."
+  }
+]

@@ -100,8 +100,8 @@ export const screeningRoutes = [
       const row = await loadApplication(ctx, params.id, 'application:read');
       const db = tenantDb(ctx);
       const [orders, adverse] = await Promise.all([
-        db.screeningOrder.findMany({ where: { applicationId: row.id }, include: { results: { select: { id: true } } }, orderBy: { createdAt: 'asc' } }),
-        db.adverseAction.findMany({ where: { applicationId: row.id }, orderBy: { createdAt: 'asc' } }),
+        db.screeningOrder.findMany({ where: { applicationId: row.id }, include: { results: { select: { id: true } } }, orderBy: { createdAt: 'asc' }, take: 50 }),
+        db.adverseAction.findMany({ where: { applicationId: row.id }, orderBy: { createdAt: 'asc' }, take: 50 }),
       ]);
       return { body: { ...(await decorate(ctx, [row]))[0]!, screeningOrders: orders.map(orderDto), adverseActions: adverse.map(adverseDto) } };
     } }),

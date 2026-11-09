@@ -171,6 +171,8 @@ model RoleAssignment {
 
   @@index([tenantOrgId, userId, scopeType, scopeId])
   @@index([tenantOrgId, role])
+  // Days 91-104: per-request role resolution filters by userId first (tenant OR platform scope); EXPLAIN showed a seq scan at 5k rows.
+  @@index([userId, revokedAt])
 }
 
 model Permission {

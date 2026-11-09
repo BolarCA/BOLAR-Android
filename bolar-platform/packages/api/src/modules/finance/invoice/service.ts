@@ -64,7 +64,7 @@ export async function nextInvoiceNumber(tx: Prisma.TransactionClient, tenantOrgI
 }
 
 async function primaryTenantProfileId(leaseId: string, tenantOrgId: string): Promise<string | null> {
-  const parties = await prisma.leaseParty.findMany({ where: { tenantOrgId, leaseId }, orderBy: { id: 'asc' } });
+  const parties = await prisma.leaseParty.findMany({ where: { tenantOrgId, leaseId }, orderBy: { id: 'asc' }, take: 50 });
   return (parties.find((p) => p.role === 'primary') ?? parties[0])?.tenantProfileId ?? null;
 }
 

@@ -1,9 +1,11 @@
 import type { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
-import { ACCESS_PURPOSES, errors, isRole, permissionsForRoles, type AccessPurpose, type RequestContext, type ScopedRole } from '@bolar/shared';
+import { ACCESS_PURPOSES, errors, isRole, permissionsForRoles, type AccessPurpose, type Permission, type RequestContext, type ScopedRole } from '@bolar/shared';
 import { prisma } from './db.js';
 import { verifyAccessToken } from './tokens.js';
 import { audit } from './audit.js';
+import { config } from '../config.js';
+import { meCache, meCacheKey, meCacheStats } from './cache.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -73,15 +75,37 @@ export async function buildContext(req: Request, res: Response, next: NextFuncti
       await audit(ctx, { action: 'support.cross_tenant_access', resourceType: 'tenant_org', resourceId: target.id, metadata: { via: support ? 'support_session' : 'platform_admin', path: req.path } });
     }
 
-    const assignments = await prisma.roleAssignment.findMany({
-      where: { userId: user.id, revokedAt: null, OR: [{ tenantOrgId: ctx.tenantOrgId }, { scopeType: 'platform' }] },
-    });
-    ctx.roles = assignments.filter((a) => isRole(a.role)).map((a) => ({ role: a.role, scopeType: a.scopeType, scopeId: a.scopeId }) as ScopedRole);
-    ctx.permissions = permissionsForRoles(ctx.roles.map((r) => r.role));
+    const resolved = await resolveRoles(user.id, ctx.tenantOrgId!, session.id);
+    ctx.roles = resolved.roles;
+    ctx.permissions = resolved.permissions;
     next();
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Roles + permissions for (user, org, session), cached for CACHE_ME_TTL_SECONDS (ADR 0006). The key carries the
+ * tenantOrgId, so an X-Tenant-Org switch resolves against a different entry and can never reuse another org's roles.
+ * IAM/auth/platform mutations call `invalidateUserCache`/`invalidateSessionCache` so grants and revocations apply
+ * immediately rather than at TTL expiry.
+ */
+export async function resolveRoles(userId: string, tenantOrgId: string, sessionId: string): Promise<{ roles: ScopedRole[]; permissions: Set<Permission>; cached: boolean }> {
+  const key = meCacheKey(userId, tenantOrgId, sessionId);
+  const hit = meCache.get(key);
+  if (hit) {
+    meCacheStats.hits++;
+    return { roles: hit.roles as ScopedRole[], permissions: new Set(hit.permissions as Permission[]), cached: true };
+  }
+  meCacheStats.misses++;
+  const assignments = await prisma.roleAssignment.findMany({
+    where: { userId, revokedAt: null, OR: [{ tenantOrgId }, { scopeType: 'platform' }] },
+    take: 200,
+  });
+  const roles = assignments.filter((a) => isRole(a.role)).map((a) => ({ role: a.role, scopeType: a.scopeType, scopeId: a.scopeId }) as ScopedRole);
+  const permissions = permissionsForRoles(roles.map((r) => r.role));
+  meCache.set(key, { roles, permissions: [...permissions] }, config().CACHE_ME_TTL_SECONDS * 1000);
+  return { roles, permissions, cached: false };
 }
 
 export function requireAuth(ctx: RequestContext, level: 'session' | 'mfa' = 'session'): void {

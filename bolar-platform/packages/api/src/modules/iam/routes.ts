@@ -12,6 +12,10 @@ import { decide, requireAccess } from '../../shared/access.js';
 import { newOpaqueToken, hashToken } from '../../shared/tokens.js';
 import { publish } from '../../shared/events.js';
 import { config } from '../../config.js';
+import { invalidateUserCache, memoizeForever } from '../../shared/cache.js';
+
+/** Permission catalog is static for the process lifetime (ADR 0006: in-process cache). */
+const permissionCatalogBody = memoizeForever(() => ({ permissions: [...PERMISSIONS], roles: ROLE_PERMISSIONS }));
 
 const INVITE_TTL_MS = 7 * 86_400_000;
 
@@ -64,6 +68,7 @@ export const iamRoutes = [
       if (before.id === ctx.actor!.userId && body.status && body.status !== 'active') throw errors.conflict('You cannot suspend your own account');
       await prisma.userProfile.update({ where: { id: params.id }, data: body });
       if (body.status && body.status !== 'active') await prisma.session.updateMany({ where: { userId: params.id, revokedAt: null }, data: { revokedAt: new Date() } });
+      invalidateUserCache(params.id);
       await audit(ctx, { action: 'user.update', resourceType: 'user', resourceId: params.id, before: { name: before.name, status: before.status }, after: body });
       return { body: await userWithRoles(ctx, params.id) };
     } }),
@@ -118,6 +123,7 @@ export const iamRoutes = [
         create: { tenantOrgId: inv.tenantOrgId, email: inv.email, name: body.name, passwordHash, status: 'active' },
       });
       await prisma.roleAssignment.create({ data: { tenantOrgId: inv.tenantOrgId, userId: user.id, role: inv.role, scopeType: inv.scopeType, scopeId: inv.scopeId, grantedBy: inv.invitedBy } });
+      invalidateUserCache(user.id);
       await prisma.invitation.update({ where: { id: inv.id }, data: { acceptedAt: new Date() } });
       if (inv.role === 'vendor') {
         // Link the portal login to the vendor profile invited under this email (Day 33 invitation flow).
@@ -129,7 +135,7 @@ export const iamRoutes = [
 
   // ---- Roles (Day 12) ----
   defineRoute({ method: 'get', path: '/permissions', operationId: 'getPermissionCatalog', summary: 'Permission catalog and role matrix', tags: ['iam'], auth: 'session', permission: 'role:read',
-    responses: { 200: permissionCatalog }, handler: async () => ({ body: { permissions: [...PERMISSIONS], roles: ROLE_PERMISSIONS } }) }),
+    responses: { 200: permissionCatalog }, handler: async () => ({ body: permissionCatalogBody() }) }),
   defineRoute({ method: 'get', path: '/roles', operationId: 'listRoleAssignments', summary: 'List role assignments', tags: ['iam'], auth: 'session', permission: 'role:read',
     request: { query: paginationQuery.extend({ userId: z.string().optional() }) }, responses: { 200: z.object({ items: z.array(roleAssignment), nextCursor: z.string().nullable() }) },
     handler: async ({ query, ctx }) => {
@@ -146,6 +152,7 @@ export const iamRoutes = [
       const existing = await prisma.roleAssignment.findFirst({ where: { tenantOrgId: ctx.tenantOrgId!, userId: body.userId, role: body.role, scopeType: body.scopeType, scopeId, revokedAt: null } });
       if (existing) throw errors.conflict('Role already assigned in this scope');
       const row = await prisma.roleAssignment.create({ data: { tenantOrgId: ctx.tenantOrgId!, userId: body.userId, role: body.role, scopeType: body.scopeType, scopeId, grantedBy: ctx.actor!.userId } });
+      invalidateUserCache(body.userId);
       await audit(ctx, { action: 'role.grant', resourceType: 'role_assignment', resourceId: row.id, after: { userId: row.userId, role: row.role, scopeType: row.scopeType, scopeId } });
       return { status: 201, body: toDto(row) };
     } }),
@@ -156,6 +163,7 @@ export const iamRoutes = [
       if (!row) throw errors.notFound();
       if (row.userId === ctx.actor!.userId && row.role === 'org_admin') throw errors.conflict('You cannot revoke your own admin role');
       await prisma.roleAssignment.update({ where: { id: row.id }, data: { revokedAt: new Date() } });
+      invalidateUserCache(row.userId);
       await audit(ctx, { action: 'role.revoke', resourceType: 'role_assignment', resourceId: row.id, before: { userId: row.userId, role: row.role, scopeType: row.scopeType, scopeId: row.scopeId } });
       return { status: 204 };
     } }),

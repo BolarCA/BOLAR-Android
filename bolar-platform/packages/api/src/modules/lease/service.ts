@@ -103,6 +103,7 @@ export async function findOverlaps(ctx: RequestContext, unitId: string, startDat
     where: { unitId, status: { in: [...LEASE_OCCUPYING_STATES] }, ...(excludeId ? { id: { not: excludeId } } : {}), startDate: { lte: endDate }, endDate: { gte: startDate } },
     select: { id: true, status: true, startDate: true, endDate: true },
     orderBy: { startDate: 'asc' },
+    take: 50,
   });
 }
 

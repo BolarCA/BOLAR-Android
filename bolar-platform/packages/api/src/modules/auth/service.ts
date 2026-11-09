@@ -6,6 +6,7 @@ import { config } from '../../config.js';
 import { audit } from '../../shared/audit.js';
 import { generateTotpSecret, otpauthUrl, verifyTotp } from '../../shared/totp.js';
 import { logger } from '../../logger.js';
+import { invalidateSessionCache, invalidateUserCache } from '../../shared/cache.js';
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
@@ -32,6 +33,7 @@ export async function login(ctx: RequestContext, input: { email: string; passwor
   const candidates = await prisma.userProfile.findMany({
     where: { email: input.email, status: 'active', ...(input.orgSlug ? { tenantOrg: { slug: input.orgSlug } } : {}) },
     include: { tenantOrg: { select: { id: true, slug: true, name: true, status: true } } },
+    take: 10, // ambiguity check only needs "more than one"
   });
   if (candidates.length > 1) {
     // Ambiguous without org; do not reveal which orgs. Client should prompt for org slug.
@@ -70,9 +72,12 @@ export async function refresh(ctx: RequestContext, refreshToken: string) {
 
 export async function logout(ctx: RequestContext, refreshToken?: string) {
   if (refreshToken) {
+    const target = await prisma.session.findUnique({ where: { refreshTokenHash: hashToken(refreshToken) }, select: { id: true } });
     await prisma.session.updateMany({ where: { refreshTokenHash: hashToken(refreshToken), revokedAt: null }, data: { revokedAt: new Date() } });
+    if (target) invalidateSessionCache(target.id);
   } else if (ctx.actor) {
     await prisma.session.updateMany({ where: { userId: ctx.actor.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    invalidateUserCache(ctx.actor.userId);
   }
   if (ctx.actor) await audit(ctx, { action: 'auth.logout', resourceType: 'session' });
 }

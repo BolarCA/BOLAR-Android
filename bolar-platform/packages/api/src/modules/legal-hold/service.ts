@@ -47,7 +47,7 @@ export async function resolveHoldTargets(tenantOrgId: string, resourceType: stri
         await push('tenant_profile', c.tenantProfileId);
       }
     } else if (type === 'tenant_profile') {
-      const parties = await prisma.leaseParty.findMany({ where: { tenantOrgId, tenantProfileId: id }, select: { leaseId: true } });
+      const parties = await prisma.leaseParty.findMany({ where: { tenantOrgId, tenantProfileId: id }, select: { leaseId: true }, take: 200 });
       for (const p of parties) await push('lease', p.leaseId);
     }
   };
@@ -60,7 +60,7 @@ export async function resolveHoldTargets(tenantOrgId: string, resourceType: stri
  * Exported for the document/retention/privacy modules; also served as GET /legal-holds/check.
  */
 export async function isHeld(tenantOrgId: string, resourceType: string, resourceId: string): Promise<HoldCheck> {
-  const holds = await prisma.legalHold.findMany({ where: { tenantOrgId, status: 'active' }, select: { id: true, scopeJson: true } });
+  const holds = await prisma.legalHold.findMany({ where: { tenantOrgId, status: 'active' }, select: { id: true, scopeJson: true }, take: 500 });
   if (holds.length === 0) return { held: false, holdIds: [] };
   const targets = await resolveHoldTargets(tenantOrgId, resourceType, resourceId);
   const holdIds = holds

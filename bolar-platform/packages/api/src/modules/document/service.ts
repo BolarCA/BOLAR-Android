@@ -108,7 +108,7 @@ export async function downloadUrlFor(ctx: RequestContext, doc: Document, version
 /** Legal hold check: document flag, or an active LegalHold whose scope names the document or its owner. */
 export async function isUnderLegalHold(tenantOrgId: string, doc: Document): Promise<boolean> {
   if (doc.legalHold) return true;
-  const holds = await prisma.legalHold.findMany({ where: { tenantOrgId, status: 'active' }, select: { scopeJson: true } });
+  const holds = await prisma.legalHold.findMany({ where: { tenantOrgId, status: 'active' }, select: { scopeJson: true }, take: 500 });
   const ownerKey = `${doc.ownerType}Ids`;
   return holds.some((h) => {
     const scope = (h.scopeJson ?? {}) as Record<string, unknown>;

@@ -9,6 +9,7 @@ import { prisma } from '../../shared/db.js';
 import { audit } from '../../shared/audit.js';
 import { publish } from '../../shared/events.js';
 import { config } from '../../config.js';
+import { invalidateUserCache } from '../../shared/cache.js';
 
 /**
  * Platform control plane (blueprint p37, Day 51). Cross-tenant by design, so it uses the root prisma client and
@@ -145,6 +146,7 @@ export const platformRoutes = [
       const existing = await prisma.supportSession.findFirst({ where: { tenantOrgId: org.id, agentUserId: ctx.actor!.userId, endedAt: null, endsAt: { gt: now } }, select: { id: true } });
       if (existing) throw errors.conflict('You already have an active support session for this organization');
       const row = await prisma.supportSession.create({ data: { tenantOrgId: org.id, agentUserId: ctx.actor!.userId, reason: body.reason, approvedBy: isPlatformAdmin(ctx) ? ctx.actor!.userId : null, startedAt: now, endsAt: new Date(now.getTime() + body.durationMinutes * 60_000) } });
+      invalidateUserCache(ctx.actor!.userId);
       const meta = { reason: body.reason, durationMinutes: body.durationMinutes, targetOrgId: org.id, targetOrgSlug: org.slug, agentUserId: ctx.actor!.userId };
       // Visible in the supported org's audit log and in the platform log.
       await audit(ctx, { action: 'support.session_started', resourceType: 'support_session', resourceId: row.id, tenantOrgId: org.id, metadata: meta });
@@ -163,6 +165,7 @@ export const platformRoutes = [
       }
       if (row.endedAt) throw errors.invalidTransition('ended', 'ended');
       const ended = await prisma.supportSession.update({ where: { id: row.id }, data: { endedAt: new Date() } });
+      invalidateUserCache(row.agentUserId);
       const meta = { targetOrgId: row.tenantOrgId, agentUserId: row.agentUserId, endedBy: ctx.actor!.userId, early: ended.endedAt!.getTime() < row.endsAt.getTime() };
       await audit(ctx, { action: 'support.session_ended', resourceType: 'support_session', resourceId: row.id, tenantOrgId: row.tenantOrgId, metadata: meta });
       if (ctx.tenantOrgId !== row.tenantOrgId) await audit(ctx, { action: 'support.session_ended', resourceType: 'support_session', resourceId: row.id, metadata: meta });

@@ -115,11 +115,20 @@ components:
           type: string
         requestId:
           type: string
+        uptime:
+          type: number
+        queueDriver:
+          type: string
+          enum:
+            - memory
+            - redis
       required:
         - status
         - checks
         - version
         - requestId
+        - uptime
+        - queueDriver
     LoginResponse:
       allOf:
         - $ref: "#/components/schemas/TokenPair"
