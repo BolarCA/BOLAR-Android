@@ -13,6 +13,7 @@ import { seedMaintenanceDemo } from './modules/maintenance.js';
 import { seedFinanceDemo } from './modules/finance.js';
 import { seedComplianceDemo } from './modules/compliance.js';
 import { seedGovernanceDemo } from './modules/governance.js';
+import { seedAiDemo } from './modules/ai.js';
 
 export async function seedDemo() {
   const { org, admin } = await seedBase();
@@ -127,6 +128,7 @@ export async function seedDemo() {
   await seedFinanceDemo(org.id);
   await seedComplianceDemo(org.id);
   await seedGovernanceDemo(org.id);
+  await seedAiDemo(org.id);
 
   return { org, properties, lease, tenantProfile, vendor };
 }
