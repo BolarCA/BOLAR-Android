@@ -105,7 +105,8 @@ test.describe('master admin control plane (Day 51) @smoke', () => {
 
     await nav.getByRole('link', { name: 'Feature flags' }).click();
     await expect(page.getByRole('heading', { name: 'Feature flags' })).toBeVisible();
-    await page.getByRole('button', { name: 'New flag' }).click();
+    // The empty state repeats the "New flag" action, so pick the page-header button explicitly.
+    await page.getByRole('button', { name: 'New flag' }).first().click();
     const key = `e2e.flag.${RUN}`;
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Key').fill(key);
