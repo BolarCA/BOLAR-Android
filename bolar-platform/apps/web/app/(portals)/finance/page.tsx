@@ -1,2 +1,3 @@
-import { PortalLanding } from '@/components/shell/portal-landing';
-export default function Page() { return <PortalLanding nextStep="Ledger dashboard appears once the chart of accounts is seeded." />; }
+import { FinanceDashboard } from '@/components/finance/dashboard';
+/** Bookkeeper portal landing: ledger dashboard (blueprint p53). */
+export default function Page() { return <FinanceDashboard />; }
