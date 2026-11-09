@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { WORK_ORDER_PRIORITIES } from '@bolar/contracts';
 import { useCan } from '@/lib/auth';
 import { ApiError } from '@/lib/api-client';
@@ -21,6 +21,8 @@ export function MaintenanceBoard() {
   const [view, setView] = useState<'board' | 'list'>('board');
   const [lane, setLane] = useState<string>('all');
   const [selected, setSelected] = useState<string | null>(null);
+  // Deep link from the operations queue (Day 54): /manager/maintenance?workOrderId=<id> opens the detail drawer.
+  useEffect(() => { const id = new URLSearchParams(window.location.search).get('workOrderId'); if (id) setSelected(id); }, []);
   const [f, setF] = useState<{ propertyId: string; priority: string; vendorId: string; assigneeId: string; overdue: boolean; includeCanceled: boolean; q: string }>({ propertyId: '', priority: '', vendorId: '', assigneeId: '', overdue: false, includeCanceled: false, q: '' });
   const params: WorkOrderFilters = useMemo(() => ({
     propertyId: f.propertyId || undefined, priority: f.priority || undefined, assignedVendorId: f.vendorId || undefined, assignedUserId: f.assigneeId || undefined,
