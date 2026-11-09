@@ -6,6 +6,13 @@
 import 'dotenv/config';
 import { prisma } from '../src/client.js';
 import { seedBase, DEMO_USERS } from './index.js';
+import { seedPropertyDemo } from './modules/property.js';
+import { seedTenancyDemo } from './modules/tenancy.js';
+import { seedDocumentsDemo } from './modules/documents.js';
+import { seedMaintenanceDemo } from './modules/maintenance.js';
+import { seedFinanceDemo } from './modules/finance.js';
+import { seedComplianceDemo } from './modules/compliance.js';
+import { seedGovernanceDemo } from './modules/governance.js';
 
 export async function seedDemo() {
   const { org, admin } = await seedBase();
@@ -111,6 +118,15 @@ export async function seedDemo() {
   if (!(await prisma.sensitiveAccessRequest.findFirst({ where: { tenantOrgId: org.id, actorId: users.property_manager!.id } }))) {
     await prisma.sensitiveAccessRequest.create({ data: { tenantOrgId: org.id, actorId: users.property_manager!.id, resourceType: 'tenant_profile', resourceId: tenantProfile.id, classification: 'confidential', purpose: 'lease_administration', justification: 'Verify identity details before lease renewal paperwork.' } });
   }
+
+  // Domain module seeds (each idempotent; order matters: property -> tenancy -> documents -> maintenance -> finance -> compliance -> governance)
+  await seedPropertyDemo(org.id);
+  await seedTenancyDemo(org.id);
+  await seedDocumentsDemo(org.id);
+  await seedMaintenanceDemo(org.id);
+  await seedFinanceDemo(org.id);
+  await seedComplianceDemo(org.id);
+  await seedGovernanceDemo(org.id);
 
   return { org, properties, lease, tenantProfile, vendor };
 }

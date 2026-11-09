@@ -63,7 +63,7 @@ type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'violet';
 export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: ReactNode }) {
   const tones: Record<Tone, string> = {
     neutral: 'bg-navy-50 text-navy-700', info: 'bg-cobalt-100 text-cobalt-700', success: 'bg-success-100 text-success-700',
-    warning: 'bg-orange-100 text-orange-700', danger: 'bg-danger-100 text-danger-600', violet: 'bg-violet-100 text-violet-700',
+    warning: 'bg-orange-100 text-orange-900', danger: 'bg-danger-100 text-danger-600', violet: 'bg-violet-100 text-violet-700',
   };
   return <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', tones[tone])}>{children}</span>;
 }
@@ -100,7 +100,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
 
 export function Table<T extends { id: string }>({ columns, rows, caption, onRowClick, emptyLabel }: { columns: { key: string; header: string; render: (row: T) => ReactNode; className?: string }[]; rows: T[]; caption: string; onRowClick?: (row: T) => void; emptyLabel?: string }) {
   return (
-    <div className="overflow-x-auto rounded-[14px] border border-line bg-surface">
+    <div className="overflow-x-auto rounded-[14px] border border-line bg-surface" tabIndex={0} role="region" aria-label={caption}>
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-navy-50 text-xs uppercase tracking-wide text-muted">

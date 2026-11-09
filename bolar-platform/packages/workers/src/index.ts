@@ -19,6 +19,12 @@ const workers = Object.entries(handlers).map(([queue, handler]) => {
   w.on('completed', (job) => logger.debug({ queue, jobId: job.id }, 'job completed'));
   return w;
 });
+// Daily retention sweep proposes dispositions; nothing is deleted without a human approval (Day 47).
+import('bullmq').then(async ({ Queue }) => {
+  const q = new Queue('retention-sweep', { connection });
+  await q.upsertJobScheduler('daily-retention-sweep', { pattern: process.env.RETENTION_SWEEP_CRON ?? '0 3 * * *' }, { name: 'retention-sweep', data: {} });
+  await q.close();
+}).catch((err) => logger.error({ err }, 'failed to schedule retention sweep'));
 logger.info({ queues: Object.keys(handlers) }, 'bolar-workers started');
 
 async function shutdown() {

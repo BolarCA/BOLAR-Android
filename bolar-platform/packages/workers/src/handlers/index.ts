@@ -1,6 +1,7 @@
 import type { Logger } from 'pino';
 import { domainEventsHandler } from './domain-events.js';
 import { notificationsHandler } from './notifications.js';
+import { exportsJobHandler, retentionSweepJob } from './reactions/governance.js';
 
 export interface JobContext { logger: Logger }
 export type JobHandler<T = Record<string, unknown>> = (data: T, ctx: JobContext) => Promise<void>;
@@ -9,4 +10,6 @@ export type JobHandler<T = Record<string, unknown>> = (data: T, ctx: JobContext)
 export const handlers: Record<string, JobHandler<never>> = {
   'domain-events': domainEventsHandler as JobHandler<never>,
   notifications: notificationsHandler as JobHandler<never>,
+  exports: exportsJobHandler as JobHandler<never>,
+  'retention-sweep': retentionSweepJob as JobHandler<never>,
 };

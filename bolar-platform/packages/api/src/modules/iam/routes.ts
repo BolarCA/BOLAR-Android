@@ -119,6 +119,10 @@ export const iamRoutes = [
       });
       await prisma.roleAssignment.create({ data: { tenantOrgId: inv.tenantOrgId, userId: user.id, role: inv.role, scopeType: inv.scopeType, scopeId: inv.scopeId, grantedBy: inv.invitedBy } });
       await prisma.invitation.update({ where: { id: inv.id }, data: { acceptedAt: new Date() } });
+      if (inv.role === 'vendor') {
+        // Link the portal login to the vendor profile invited under this email (Day 33 invitation flow).
+        await prisma.vendorProfile.updateMany({ where: { tenantOrgId: inv.tenantOrgId, email: inv.email, userId: null }, data: { userId: user.id } });
+      }
       await audit({ ...ctx, tenantOrgId: inv.tenantOrgId, actor: { userId: user.id, email: user.email, name: user.name, isPlatform: false, mfaVerified: false } }, { action: 'invitation.accept', resourceType: 'invitation', resourceId: inv.id, after: { role: inv.role } });
       return { status: 200, body: { ok: true, orgSlug: inv.tenantOrg.slug, email: user.email } };
     } }),
