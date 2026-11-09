@@ -46,6 +46,28 @@ const schema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   AI_MODEL: z.string().default('claude-fable-5-1'),
   AI_MONTHLY_BUDGET_CENTS: z.coerce.number().int().min(0).default(5000),
+  // ---- Hardening (Days 91-104): every key has a safe default so unset env means "previous behaviour". ----
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
+  OTEL_SERVICE_NAME: z.string().default('bolar-api'),
+  /** Interval for the per-route-class latency histogram summary log; 0 disables the summary. */
+  OBS_HISTOGRAM_LOG_INTERVAL_MS: z.coerce.number().int().min(0).default(60_000),
+  RATE_LIMIT_ENABLED: z.enum(['0', '1']).default('1'),
+  /** auto: Redis when REDIS_URL answers, else in-memory. Tests force memory. */
+  RATE_LIMIT_DRIVER: z.enum(['auto', 'memory', 'redis']).default('auto'),
+  RATE_LIMIT_LOGIN_PER_IP: z.coerce.number().int().min(1).default(10),
+  RATE_LIMIT_LOGIN_PER_EMAIL: z.coerce.number().int().min(1).default(5),
+  RATE_LIMIT_PUBLIC_PER_IP: z.coerce.number().int().min(1).default(60),
+  RATE_LIMIT_AUTHED_PER_ACTOR: z.coerce.number().int().min(1).default(600),
+  /** Comma list of client IPs that bypass rate limiting (load generators, CI runners). Outside production the
+   *  loopback addresses are trusted by default so local e2e and dev servers are not throttled. */
+  RATE_LIMIT_TRUSTED_IPS: z.string().optional(),
+  CACHE_ME_TTL_SECONDS: z.coerce.number().int().min(0).default(30),
+  /** Opt-in PostgreSQL row-level security for tenant reads (ADR 0005). Requires a non-owner DB role. */
+  DB_RLS_ENFORCE: z.enum(['0', '1']).default('0'),
+  QUEUE_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(5),
+  QUEUE_BACKOFF_BASE_MS: z.coerce.number().int().min(100).default(2_000),
+  QUEUE_BACKOFF_MAX_MS: z.coerce.number().int().min(1_000).default(300_000),
+  QUEUE_BACKOFF_JITTER: z.coerce.number().min(0).max(1).default(0.5),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -65,6 +87,12 @@ export function config(): Config {
   }
   cached = parsed.data;
   return cached;
+}
+
+/** Client IPs exempt from rate limiting (see RATE_LIMIT_TRUSTED_IPS). */
+export function trustedRateLimitIps(cfg: Config = config()): Set<string> {
+  if (cfg.RATE_LIMIT_TRUSTED_IPS !== undefined) return new Set(cfg.RATE_LIMIT_TRUSTED_IPS.split(',').map((s) => s.trim()).filter(Boolean));
+  return cfg.NODE_ENV === 'production' ? new Set() : new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 }
 export function resetConfigForTests(): void {
   cached = null;

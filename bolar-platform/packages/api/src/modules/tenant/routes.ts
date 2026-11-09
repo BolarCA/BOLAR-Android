@@ -53,7 +53,7 @@ export const tenantRoutes = [
   // ---- Business accounts & subaccounts (tenant scoped) ----
   defineRoute({ method: 'get', path: '/business-accounts', operationId: 'listBusinessAccounts', summary: 'List business accounts in the org', tags: ['tenant'], auth: 'session', permission: 'org:read',
     responses: { 200: z.object({ items: z.array(businessAccount) }) },
-    handler: async ({ ctx }) => ({ body: { items: toDto(await tenantDb(ctx).businessAccount.findMany({ orderBy: { createdAt: 'asc' } })) } }) }),
+    handler: async ({ ctx }) => ({ body: { items: toDto(await tenantDb(ctx).businessAccount.findMany({ orderBy: { createdAt: 'asc' }, take: 100 })) } }) }),
   defineRoute({ method: 'post', path: '/business-accounts', operationId: 'createBusinessAccount', summary: 'Create a business account', tags: ['tenant'], auth: 'mfa', permission: 'org:write',
     request: { body: createBusinessAccount }, responses: { 201: businessAccount },
     handler: async ({ body, ctx }) => {

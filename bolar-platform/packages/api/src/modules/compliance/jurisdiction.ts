@@ -76,7 +76,7 @@ export async function resolveChain(ctx: RequestContext, input: { propertyId?: st
 
 /** Rules are platform-global (no tenantOrgId), so the root client is used deliberately here. */
 export async function loadRulesForChain(chain: readonly string[], asOf: Date, domains?: readonly string[]): Promise<ScopedRule[]> {
-  const rows = await prisma.complianceRule.findMany({ where: { jurisdiction: { in: [...chain] }, status: 'active', ...(domains?.length ? { domain: { in: [...domains] } } : {}) } });
+  const rows = await prisma.complianceRule.findMany({ where: { jurisdiction: { in: [...chain] }, status: 'active', ...(domains?.length ? { domain: { in: [...domains] } } : {}) }, take: 500 });
   return selectRules(rows, chain, asOf, domains);
 }
 

@@ -3,6 +3,8 @@ import { config } from './config.js';
 import { logger } from './logger.js';
 import { prisma } from './shared/db.js';
 import { closeQueues } from './shared/queue.js';
+import { closeRateLimiter } from './shared/rate-limit.js';
+import { shutdownTelemetry } from './shared/observability.js';
 
 const app = createApp();
 const server = app.listen(config().API_PORT, () => logger.info({ port: config().API_PORT }, 'bolar-api listening'));
@@ -11,6 +13,8 @@ async function shutdown(signal: string) {
   logger.info({ signal }, 'shutting down');
   server.close(async () => {
     await closeQueues();
+    await closeRateLimiter();
+    await shutdownTelemetry();
     await prisma.$disconnect();
     process.exit(0);
   });

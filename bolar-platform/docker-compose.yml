@@ -32,6 +32,21 @@ services:
   mailhog:
     image: mailhog/mailhog
     ports: ["1025:1025", "8025:8025"]
+  # ---- Optional observability stack (Days 91-104): docker compose --profile observability up -d ----
+  # Point the API at it with OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 and open Jaeger at http://localhost:16686.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    profiles: ["observability"]
+    command: ["--config=/etc/otel/collector.yaml"]
+    volumes: ["./infra/observability/otel-collector.yaml:/etc/otel/collector.yaml:ro"]
+    ports: ["4318:4318", "4317:4317"]
+    depends_on: [jaeger]
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    profiles: ["observability"]
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports: ["16686:16686"]
 volumes:
   pgdata: {}
   miniodata: {}

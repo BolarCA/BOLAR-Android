@@ -44,7 +44,7 @@ export async function loadCase(ctx: RequestContext, id: string, permission: 'cas
 }
 
 async function caseDto(ctx: RequestContext, row: { id: string } & Record<string, unknown>) {
-  const holds = await prisma.legalHold.findMany({ where: { tenantOrgId: ctx.tenantOrgId!, status: 'active', scopeJson: { path: ['caseIds'], array_contains: [row.id] } }, select: { id: true } });
+  const holds = await prisma.legalHold.findMany({ where: { tenantOrgId: ctx.tenantOrgId!, status: 'active', scopeJson: { path: ['caseIds'], array_contains: [row.id] } }, select: { id: true }, take: 100 });
   return { ...toDto(row), activeHoldIds: holds.map((h) => h.id) };
 }
 

@@ -38,7 +38,7 @@ export interface DiscoveryResult {
 
 /** Find everything held about the subject (email) inside this org only. */
 export async function discoverSubject(tenantOrgId: string, email: string): Promise<DiscoveryResult> {
-  const users = await prisma.userProfile.findMany({ where: { tenantOrgId, email }, select: { id: true } });
+  const users = await prisma.userProfile.findMany({ where: { tenantOrgId, email }, select: { id: true }, take: 10 });
   const profiles = await prisma.tenantProfile.findMany({ where: { tenantOrgId, OR: [{ email }, ...(users.length ? [{ userId: { in: users.map((u) => u.id) } }] : [])] }, select: { id: true } });
   const tenantProfileIds = profiles.map((p) => p.id);
   const userIds = users.map((u) => u.id);
@@ -96,7 +96,7 @@ function render(body: string, vars: Record<string, string>): string {
 
 /** Render the approved `privacy.confirmation` template (org override first, then platform). */
 export async function renderConfirmation(tenantOrgId: string, vars: Record<string, string>): Promise<string> {
-  const templates = await prisma.template.findMany({ where: { key: 'privacy.confirmation', OR: [{ tenantOrgId }, { tenantOrgId: null }] } });
+  const templates = await prisma.template.findMany({ where: { key: 'privacy.confirmation', OR: [{ tenantOrgId }, { tenantOrgId: null }] }, take: 10 });
   const tpl = templates.find((t) => t.tenantOrgId === tenantOrgId) ?? templates.find((t) => t.tenantOrgId === null);
   const version = tpl ? await prisma.templateVersion.findFirst({ where: { templateId: tpl.id, status: 'approved' }, orderBy: { version: 'desc' } }) : null;
   const body = version?.body ?? 'We received your {{kind}} request on {{receivedAt}}. Reference {{requestId}}. We will respond by {{dueAt}}.';

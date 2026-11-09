@@ -94,6 +94,58 @@ export function mount(router: Router, defs: RouteDef[]): void {
   }
 }
 
+/** Largest page any list route may return (blueprint p297 "no unbounded lists"). */
+export const MAX_PAGE_LIMIT = 100;
+
+function shapeOf(schema: ZodTypeAny | null | undefined): Record<string, unknown> | null {
+  if (!schema) return null;
+  const d = schema as unknown as { def?: { shape?: unknown; innerType?: ZodTypeAny }; _def?: { shape?: unknown; innerType?: ZodTypeAny } };
+  const raw = d.def?.shape ?? d._def?.shape;
+  if (raw) return (typeof raw === 'function' ? (raw as () => Record<string, unknown>)() : raw) as Record<string, unknown>;
+  const inner = d.def?.innerType ?? d._def?.innerType;
+  return inner ? shapeOf(inner) : null;
+}
+
+/** A response is a page when it carries `items` and `nextCursor` (shared `Page<T>` contract). */
+export function isPageResponse(schema: ZodTypeAny | null | undefined): boolean {
+  const s = shapeOf(schema);
+  return !!s && 'items' in s && 'nextCursor' in s;
+}
+
+/**
+ * Startup assertion (Days 91-104 pagination audit): every GET route whose success response is a page must declare
+ * a `limit` query parameter that defaults to and caps at MAX_PAGE_LIMIT or less. Behavioural check (parse) rather
+ * than schema introspection so it holds for `paginationQuery.extend(...)`, `.default()`, coercion and refinements.
+ */
+export function assertBoundedListRoutes(routes: readonly RouteDef[] = routeRegistry): { checked: number; pageRoutes: string[] } {
+  const offenders: string[] = [];
+  const pageRoutes: string[] = [];
+  for (const r of routes) {
+    if (r.method !== 'get') continue;
+    const success = Object.entries(r.responses).find(([code, s]) => Number(code) < 300 && s)?.[1] as ZodTypeAny | undefined;
+    if (!isPageResponse(success)) continue;
+    pageRoutes.push(`${r.method.toUpperCase()} ${r.path}`);
+    const q = r.request?.query;
+    const why = (() => {
+      if (!q) return 'no query schema';
+      const limitSchema = shapeOf(q)?.limit as ZodTypeAny | undefined;
+      if (!limitSchema) return 'no limit query parameter';
+      // Exercise the limit field itself so routes with other required filters (e.g. ownerType) are covered too.
+      const def = limitSchema.safeParse(undefined);
+      const lim = def.success ? (def.data as unknown) : undefined;
+      if (typeof lim !== 'number' || !(lim >= 1 && lim <= MAX_PAGE_LIMIT)) return `default limit is ${String(lim)}`;
+      const max = limitSchema.safeParse(String(MAX_PAGE_LIMIT));
+      if (!max.success || max.data !== MAX_PAGE_LIMIT) return `limit=${MAX_PAGE_LIMIT} not accepted`;
+      const over = limitSchema.safeParse(String(MAX_PAGE_LIMIT + 1));
+      if (over.success) return `limit=${MAX_PAGE_LIMIT + 1} accepted`;
+      return null;
+    })();
+    if (why) offenders.push(`${r.method.toUpperCase()} ${r.path} (${r.operationId}): ${why}`);
+  }
+  if (offenders.length) throw new Error(`Unbounded list routes (add paginationQuery with limit <= ${MAX_PAGE_LIMIT}):\n  ${offenders.join('\n  ')}`);
+  return { checked: routes.length, pageRoutes };
+}
+
 /** Serialize Prisma rows: Date -> ISO string, Decimal -> number, drop secrets. */
 export function toDto<T>(row: T, omit: string[] = []): T {
   if (row === null || row === undefined) return row;
