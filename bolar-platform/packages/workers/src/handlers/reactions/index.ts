@@ -2,4 +2,5 @@
 import './finance.js';
 import './compliance.js';
 import './notification.js';
+import './maintenance.js';
 export {};
