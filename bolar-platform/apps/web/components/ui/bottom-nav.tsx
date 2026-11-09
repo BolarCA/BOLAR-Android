@@ -16,7 +16,7 @@ export function BottomNav({ items, label, className }: { items: BottomNavItem[];
   const pathname = usePathname();
   const isActive = (item: BottomNavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + '/'));
   return (
-    <nav aria-label={label} data-testid="bottom-nav" className={cn('fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface shadow-[0_-4px_16px_rgba(11,31,58,0.08)] lg:hidden', className)} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <nav aria-label={label} data-testid="bottom-nav" className={cn('fixed inset-x-0 bottom-0 z-40 isolate border-t border-line bg-surface shadow-[0_-4px_16px_rgba(11,31,58,0.08)] lg:hidden', className)} style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <ul className="grid auto-cols-fr grid-flow-col">
         {items.map((item) => {
           const active = isActive(item);

@@ -72,7 +72,17 @@ test.describe('tenant mobile home (Day 52) @smoke', () => {
     test.skip(!isMobile(page), 'the bottom navigation only renders below the lg breakpoint');
     await login(page, DEMO.tenant, /\/tenant$/);
     const bottomNav = page.getByRole('navigation', { name: 'Resident' });
-    await bottomNav.getByRole('link', { name: 'Pay' }).click();
+    const payTab = bottomNav.getByRole('link', { name: 'Pay' });
+    await expect(payTab).toBeVisible();
+    // The bar must be the top-most layer at its own position (nothing from the page content may cover a tab).
+    const hit = await payTab.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const target = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return target ? el.contains(target) || target.contains(el) : false;
+    });
+    expect(hit, 'bottom nav tab is covered by page content').toBe(true);
+    await payTab.focus();
+    await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/tenant\/pay$/);
     await expect(page.getByRole('heading', { name: 'Pay rent' })).toBeVisible();
     await expect(bottomNav.getByRole('link', { name: 'Pay' })).toHaveAttribute('aria-current', 'page');
