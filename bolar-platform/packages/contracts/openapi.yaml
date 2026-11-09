@@ -10,11 +10,14 @@ servers:
 tags:
   - name: audit
   - name: auth
+  - name: compliance
   - name: finance
   - name: health
   - name: iam
   - name: integrations
+  - name: notice
   - name: property
+  - name: screening
   - name: sensitive-access
   - name: tenant
 components:
@@ -2237,6 +2240,434 @@ components:
         - unassignedUnits
         - unitCounts
         - truncated
+    ApplicationLookups:
+      type: object
+      properties:
+        properties:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 64
+              name:
+                type: string
+              city:
+                type: string
+              state:
+                type: string
+            required:
+              - id
+              - name
+              - city
+              - state
+        applicants:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 64
+              displayName:
+                type: string
+              status:
+                type: string
+            required:
+              - id
+              - displayName
+              - status
+      required:
+        - properties
+        - applicants
+    ApplicationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        unitId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        applicantId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        status:
+          type: string
+          enum:
+            - draft
+            - submitted
+            - screening
+            - review
+            - approved
+            - conditionally_approved
+            - denied
+            - withdrawn
+        submittedAt:
+          type:
+            - string
+            - "null"
+        decidedAt:
+          type:
+            - string
+            - "null"
+        decidedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        applicantName:
+          type: string
+        propertyName:
+          type: string
+      required:
+        - id
+        - propertyId
+        - unitId
+        - applicantId
+        - status
+        - submittedAt
+        - decidedAt
+        - decidedBy
+        - createdAt
+        - updatedAt
+    CreateApplication:
+      type: object
+      properties:
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        unitId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        applicantId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - propertyId
+        - applicantId
+    ApplicationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Application"
+        - type: object
+          properties:
+            screeningOrders:
+              type: array
+              items:
+                $ref: "#/components/schemas/ScreeningOrder"
+            adverseActions:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdverseAction"
+          required:
+            - screeningOrders
+            - adverseActions
+    ScreeningOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        applicationId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        provider:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending_consent
+            - ordered
+            - completed
+            - failed
+            - canceled
+        consentAt:
+          type:
+            - string
+            - "null"
+        consentDocId:
+          type:
+            - string
+            - "null"
+        externalId:
+          type:
+            - string
+            - "null"
+        orderedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        resultId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+      required:
+        - id
+        - applicationId
+        - provider
+        - status
+        - consentAt
+        - consentDocId
+        - externalId
+        - orderedBy
+        - createdAt
+        - updatedAt
+        - resultId
+    AdverseAction:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        applicationId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        stage:
+          type: string
+          enum:
+            - pre_adverse
+            - waiting
+            - final
+            - disputed
+            - withdrawn
+        noticeId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        reasonCodes:
+          type: array
+          items:
+            type: string
+        waitingPeriodEndsAt:
+          type:
+            - string
+            - "null"
+        disputeOpenedAt:
+          type:
+            - string
+            - "null"
+        approvedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        finalNoticeId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+      required:
+        - id
+        - applicationId
+        - stage
+        - noticeId
+        - reasonCodes
+        - waitingPeriodEndsAt
+        - disputeOpenedAt
+        - approvedBy
+        - createdAt
+        - updatedAt
+    RecordScreeningConsent:
+      type: object
+      properties:
+        consentDocumentId:
+          type: string
+          maxLength: 64
+        provider:
+          type: string
+          enum:
+            - mock
+            - transunion
+    OrderScreening:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            type: string
+            enum:
+              - credit
+              - criminal
+              - eviction
+          minItems: 1
+          default:
+            - credit
+            - criminal
+            - eviction
+    ScreeningResultResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        orderId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        classification:
+          type: string
+          enum:
+            - restricted
+        receivedAt:
+          type: string
+        summary:
+          $ref: "#/components/schemas/ScreeningSummary"
+        download:
+          type:
+            - object
+            - "null"
+          properties:
+            url:
+              type: string
+            expiresAt:
+              type: string
+          required:
+            - url
+            - expiresAt
+      required:
+        - id
+        - orderId
+        - classification
+        - receivedAt
+        - summary
+        - download
+    ScreeningSummary:
+      type:
+        - object
+        - "null"
+      properties:
+        recommendation:
+          type: string
+          enum:
+            - accept
+            - conditional
+            - review
+            - decline
+        creditBand:
+          type: string
+        evictionRecords:
+          type: integer
+        criminalRecords:
+          type: integer
+        providerContact:
+          type: string
+      required:
+        - recommendation
+        - evictionRecords
+        - criminalRecords
+        - providerContact
+    DecideApplicationResponse:
+      type: object
+      properties:
+        application:
+          $ref: "#/components/schemas/Application"
+        adverseAction:
+          allOf:
+            - $ref: "#/components/schemas/AdverseAction"
+            - type:
+                - object
+                - "null"
+      required:
+        - application
+        - adverseAction
+    DecideApplication:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum:
+            - approved
+            - conditionally_approved
+            - denied
+        reasonCodes:
+          type: array
+          items:
+            type: string
+            enum:
+              - insufficient_income
+              - credit_history
+              - eviction_record
+              - criminal_record
+              - incomplete_application
+              - unverifiable_information
+              - rental_history
+              - other
+          maxItems: 8
+          default: []
+        note:
+          type: string
+          maxLength: 2000
+      required:
+        - decision
+    AdverseActionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdverseAction"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     WebhookOutcome:
       type: object
       properties:
@@ -3339,6 +3770,937 @@ components:
         - trialBalanced
         - unbalancedEntries
         - paymentsMode
+    ComplianceRulePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComplianceRule"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ComplianceRule:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        key:
+          type: string
+        version:
+          type: integer
+        jurisdiction:
+          type: string
+        domain:
+          type: string
+          enum:
+            - rent
+            - deposit
+            - screening
+            - notice
+            - fair_housing
+            - soi
+            - privacy
+            - maintenance
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        action:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+        conditions:
+          $ref: "#/components/schemas/RuleConditions"
+        effectiveFrom:
+          type: string
+        effectiveTo:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+          enum:
+            - draft
+            - active
+            - retired
+        sourceUrl:
+          type:
+            - string
+            - "null"
+        approvedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+      required:
+        - id
+        - key
+        - version
+        - jurisdiction
+        - domain
+        - title
+        - description
+        - severity
+        - action
+        - conditions
+        - effectiveFrom
+        - effectiveTo
+        - status
+        - sourceUrl
+        - approvedBy
+        - createdAt
+    RuleConditions:
+      type: object
+      additionalProperties: {}
+      description: "Condition tree: { all?: Cond[], any?: Cond[], not?: Cond } with leaves { field, op, value? }. ops: eq, neq, gt, gte, lt, lte, in, is_null, not_null, gt_field, lt_field, matches_any, contains."
+    CreateComplianceRule:
+      type: object
+      properties:
+        key:
+          type: string
+          minLength: 3
+          maxLength: 120
+          pattern: ^[a-z0-9_.-]+$
+        jurisdiction:
+          type: string
+          pattern: ^US(-[A-Z]{2}(-[A-Z0-9_]{1,64})*)?$
+        domain:
+          type: string
+          enum:
+            - rent
+            - deposit
+            - screening
+            - notice
+            - fair_housing
+            - soi
+            - privacy
+            - maintenance
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+          minLength: 3
+          maxLength: 2000
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          default: medium
+        action:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+          default: warn
+        conditions:
+          $ref: "#/components/schemas/RuleConditions"
+        effectiveFrom:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        effectiveTo:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+            - type: "null"
+        sourceUrl:
+          type:
+            - string
+            - "null"
+          maxLength: 500
+          format: uri
+      required:
+        - key
+        - jurisdiction
+        - domain
+        - title
+        - description
+        - conditions
+    RuleEvaluationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuleEvaluation"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    RuleEvaluation:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        ruleId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        ruleKey:
+          type: string
+        ruleVersion:
+          type: integer
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        result:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+        evidenceJson: {}
+        reviewedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        reviewedAt:
+          type:
+            - string
+            - "null"
+        resolution:
+          type:
+            - string
+            - "null"
+          enum:
+            - accepted
+            - remediated
+            - overridden
+            - dismissed
+            - null
+        createdAt:
+          type: string
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        domain:
+          type: string
+        jurisdiction:
+          type: string
+        title:
+          type: string
+        sourceUrl:
+          type:
+            - string
+            - "null"
+        dueAt:
+          type: string
+      required:
+        - id
+        - ruleId
+        - ruleKey
+        - ruleVersion
+        - resourceType
+        - resourceId
+        - result
+        - reviewedBy
+        - reviewedAt
+        - resolution
+        - createdAt
+        - severity
+        - domain
+        - jurisdiction
+        - title
+        - sourceUrl
+        - dueAt
+    ResolveRuleEvaluation:
+      type: object
+      properties:
+        resolution:
+          type: string
+          enum:
+            - accepted
+            - remediated
+            - overridden
+            - dismissed
+        note:
+          type: string
+          maxLength: 2000
+      required:
+        - resolution
+    EvaluateRulesResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuleHit"
+        evaluationIds:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        jurisdictionChain:
+          type: array
+          items:
+            type: string
+        rulesConsidered:
+          type: integer
+      required:
+        - result
+        - hits
+        - evaluationIds
+        - jurisdictionChain
+        - rulesConsidered
+    RuleHit:
+      type: object
+      properties:
+        ruleId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        ruleKey:
+          type: string
+        ruleVersion:
+          type: integer
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        action:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+        evidence:
+          $ref: "#/components/schemas/RuleHitEvidence"
+      required:
+        - ruleKey
+        - ruleVersion
+        - severity
+        - action
+        - evidence
+    RuleHitEvidence:
+      type: object
+      properties:
+        conditionsMatched:
+          type: array
+          items:
+            type: string
+        facts:
+          $ref: "#/components/schemas/RuleFacts"
+        matchedTerms:
+          type: array
+          items:
+            type: string
+        sourceUrl:
+          type:
+            - string
+            - "null"
+        title:
+          type: string
+        description:
+          type: string
+        jurisdiction:
+          type: string
+        domain:
+          type: string
+      required:
+        - conditionsMatched
+        - facts
+        - sourceUrl
+        - title
+        - description
+        - jurisdiction
+        - domain
+    RuleFacts:
+      type: object
+      additionalProperties: {}
+    EvaluateRulesRequest:
+      type: object
+      properties:
+        domain:
+          type: string
+          enum:
+            - rent
+            - deposit
+            - screening
+            - notice
+            - fair_housing
+            - soi
+            - privacy
+            - maintenance
+        resourceType:
+          type: string
+          minLength: 1
+          maxLength: 64
+        resourceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        facts:
+          $ref: "#/components/schemas/RuleFacts"
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        jurisdiction:
+          type: string
+          pattern: ^US(-[A-Z]{2}(-[A-Z0-9_]{1,64})*)?$
+        asOf:
+          type: string
+          format: date-time
+        dryRun:
+          type: boolean
+        candidate:
+          type: object
+          properties:
+            key:
+              type: string
+              minLength: 1
+              maxLength: 120
+              default: draft.candidate
+            action:
+              type: string
+              enum:
+                - allow
+                - warn
+                - block
+                - review
+              default: warn
+            severity:
+              type: string
+              enum:
+                - low
+                - medium
+                - high
+                - critical
+              default: medium
+            conditions:
+              $ref: "#/components/schemas/RuleConditions"
+            title:
+              type: string
+              maxLength: 200
+              default: Draft rule
+            jurisdiction:
+              type: string
+              pattern: ^US(-[A-Z]{2}(-[A-Z0-9_]{1,64})*)?$
+              default: US
+            domain:
+              type: string
+              enum:
+                - rent
+                - deposit
+                - screening
+                - notice
+                - fair_housing
+                - soi
+                - privacy
+                - maintenance
+              default: rent
+          required:
+            - conditions
+      required:
+        - resourceType
+        - resourceId
+        - facts
+    NewComplianceRuleVersion:
+      type: object
+      properties:
+        jurisdiction:
+          type: string
+          pattern: ^US(-[A-Z]{2}(-[A-Z0-9_]{1,64})*)?$
+        domain:
+          type: string
+          enum:
+            - rent
+            - deposit
+            - screening
+            - notice
+            - fair_housing
+            - soi
+            - privacy
+            - maintenance
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+          minLength: 3
+          maxLength: 2000
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          default: medium
+        action:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+          default: warn
+        conditions:
+          $ref: "#/components/schemas/RuleConditions"
+        effectiveFrom:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        effectiveTo:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+            - type: "null"
+        sourceUrl:
+          type:
+            - string
+            - "null"
+          maxLength: 500
+          format: uri
+    JurisdictionResolution:
+      type: object
+      properties:
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        chain:
+          type: array
+          items:
+            type: string
+        override:
+          $ref: "#/components/schemas/JurisdictionOverride"
+        activeRules:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 64
+              key:
+                type: string
+              version:
+                type: integer
+              domain:
+                type: string
+              jurisdiction:
+                type: string
+              action:
+                type: string
+                enum:
+                  - allow
+                  - warn
+                  - block
+                  - review
+              severity:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+                  - critical
+              title:
+                type: string
+            required:
+              - id
+              - key
+              - version
+              - domain
+              - jurisdiction
+              - action
+              - severity
+              - title
+      required:
+        - propertyId
+        - chain
+        - override
+        - activeRules
+    JurisdictionOverride:
+      type:
+        - object
+        - "null"
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        jurisdiction:
+          type: string
+        reason:
+          type: string
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+      required:
+        - id
+        - propertyId
+        - jurisdiction
+        - reason
+        - createdBy
+        - createdAt
+    JurisdictionOverridePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JurisdictionOverride"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    CreateJurisdictionOverride:
+      type: object
+      properties:
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        jurisdiction:
+          type: string
+          pattern: ^US(-[A-Z]{2}(-[A-Z0-9_]{1,64})*)?$
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 1000
+      required:
+        - propertyId
+        - jurisdiction
+        - reason
+    ScreenTextResponse:
+      type: object
+      properties:
+        flagged:
+          type: boolean
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScreenTextHit"
+        evaluationIds:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+        - flagged
+        - hits
+        - evaluationIds
+    ScreenTextHit:
+      type: object
+      properties:
+        ruleKey:
+          type: string
+        ruleVersion:
+          type: integer
+        term:
+          type: string
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+        action:
+          type: string
+          enum:
+            - allow
+            - warn
+            - block
+            - review
+        sourceUrl:
+          type:
+            - string
+            - "null"
+      required:
+        - ruleKey
+        - ruleVersion
+        - term
+        - severity
+        - action
+        - sourceUrl
+    ScreenTextRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        resourceType:
+          type: string
+          minLength: 1
+          maxLength: 64
+        resourceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - text
+    NoticePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notice"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    Notice:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          type: string
+          enum:
+            - late_rent
+            - lease_violation
+            - entry
+            - adverse_action
+            - termination
+            - general
+        templateKey:
+          type: string
+        recipientId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        status:
+          type: string
+          enum:
+            - draft
+            - pending_approval
+            - approved
+            - sent
+            - rejected
+            - canceled
+        bodyDraft:
+          type: string
+        variables:
+          type: object
+          additionalProperties: {}
+        ruleEvaluationIds:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        approvedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        approvedAt:
+          type:
+            - string
+            - "null"
+        sentAt:
+          type:
+            - string
+            - "null"
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        recipientName:
+          type: string
+      required:
+        - id
+        - kind
+        - templateKey
+        - recipientId
+        - leaseId
+        - status
+        - bodyDraft
+        - variables
+        - ruleEvaluationIds
+        - approvedBy
+        - approvedAt
+        - sentAt
+        - createdBy
+        - createdAt
+        - updatedAt
+    NoticeWithGuard:
+      allOf:
+        - $ref: "#/components/schemas/Notice"
+        - type: object
+          properties:
+            guard:
+              type: object
+              properties:
+                flagged:
+                  type: boolean
+                hits:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ScreenTextHit"
+              required:
+                - flagged
+                - hits
+            ruleHits:
+              type: array
+              items:
+                $ref: "#/components/schemas/RuleHit"
+            result:
+              type: string
+              enum:
+                - allow
+                - warn
+                - block
+                - review
+          required:
+            - guard
+            - ruleHits
+            - result
+    CreateNotice:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - late_rent
+            - lease_violation
+            - entry
+            - adverse_action
+            - termination
+            - general
+        templateKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        recipientId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        variables:
+          type: object
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: "null"
+          default: {}
+        body:
+          type: string
+          maxLength: 20000
+        facts:
+          type: object
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: "null"
+          default: {}
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - kind
+        - templateKey
+        - recipientId
+    RejectNotice:
+      type: object
+      properties:
+        note:
+          type: string
+          minLength: 3
+          maxLength: 2000
+      required:
+        - note
   parameters: {}
 paths:
   /health:
@@ -7399,6 +8761,1191 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
+  /applications/lookups:
+    get:
+      operationId: getApplicationLookups
+      summary: Properties and applicant profiles available for a new application
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationLookups"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications:
+    get:
+      operationId: listApplications
+      summary: List rental applications
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum:
+              - draft
+              - submitted
+              - screening
+              - review
+              - approved
+              - conditionally_approved
+              - denied
+              - withdrawn
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: applicantId
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createApplication
+      summary: Create a rental application for an applicant profile
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplication"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications/{id}:
+    get:
+      operationId: getApplication
+      summary: Application with screening orders and adverse actions (no report data)
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications/{id}/submit:
+    post:
+      operationId: submitApplication
+      summary: Submit a draft application
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications/{id}/withdraw:
+    post:
+      operationId: withdrawApplication
+      summary: Withdraw an application
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications/{id}/consent:
+    post:
+      operationId: recordScreeningConsent
+      summary: Record applicant consent (FCRA) on a pending screening order
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: application:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordScreeningConsent"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningOrder"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications/{id}/screening-orders:
+    post:
+      operationId: orderScreening
+      summary: Place a screening order; blocked (409) by rule when consent is missing
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: screening:order
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderScreening"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningOrder"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /screening-orders/{id}/run:
+    post:
+      operationId: runScreeningOrder
+      summary: Call the screening provider (mock fixtures) and store the restricted report
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: screening:order
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningOrder"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /screening-orders/{id}/result:
+    get:
+      operationId: getScreeningResult
+      summary: Restricted screening summary and signed report link (sensitive-access gate)
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningResultResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /applications/{id}/decide:
+    post:
+      operationId: decideApplication
+      summary: Human decision on an application; denial/conditional opens the FCRA adverse action workflow
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: adverse_action:manage
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideApplication"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecideApplicationResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /adverse-actions:
+    get:
+      operationId: listAdverseActions
+      summary: Adverse action queue
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum:
+              - pre_adverse
+              - waiting
+              - final
+              - disputed
+              - withdrawn
+          required: false
+          name: stage
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: applicationId
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdverseActionPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /adverse-actions/{id}:
+    get:
+      operationId: getAdverseAction
+      summary: Adverse action detail
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: application:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdverseAction"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /adverse-actions/{id}/advance:
+    post:
+      operationId: advanceAdverseAction
+      summary: pre_adverse -> waiting once the notice is sent; waiting -> final only after the waiting period
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: adverse_action:manage
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdverseAction"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /adverse-actions/{id}/dispute:
+    post:
+      operationId: disputeAdverseAction
+      summary: Open an applicant dispute; the clock pauses until resolved by a human
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: adverse_action:manage
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdverseAction"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /adverse-actions/{id}/withdraw:
+    post:
+      operationId: withdrawAdverseAction
+      summary: Withdraw an adverse action (e.g. dispute resolved in the applicant favour); application returns to review
+      tags:
+        - screening
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: adverse_action:manage
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdverseAction"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
   /webhooks/{provider}:
     post:
       operationId: receiveWebhook
@@ -9466,6 +12013,1720 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FinanceSummary"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules:
+    get:
+      operationId: listComplianceRules
+      summary: List compliance rules (platform catalog, all versions)
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            maxLength: 80
+          required: false
+          name: jurisdiction
+          in: query
+        - schema:
+            type: string
+            enum:
+              - rent
+              - deposit
+              - screening
+              - notice
+              - fair_housing
+              - soi
+              - privacy
+              - maintenance
+          required: false
+          name: domain
+          in: query
+        - schema:
+            type: string
+            enum:
+              - draft
+              - active
+              - retired
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            maxLength: 120
+          required: false
+          name: key
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceRulePage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createComplianceRule
+      summary: Create a rule (version 1, draft) for counsel review
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: compliance:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateComplianceRule"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceRule"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/evaluations:
+    get:
+      operationId: listRuleEvaluations
+      summary: "Compliance review queue: rule hits with severity, due date and evidence"
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            maxLength: 64
+          required: false
+          name: resourceType
+          in: query
+        - schema:
+            type: string
+            maxLength: 64
+          required: false
+          name: resourceId
+          in: query
+        - schema:
+            type: string
+            enum:
+              - allow
+              - warn
+              - block
+              - review
+          required: false
+          name: result
+          in: query
+        - schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+          required: false
+          name: reviewed
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            enum:
+              - rent
+              - deposit
+              - screening
+              - notice
+              - fair_housing
+              - soi
+              - privacy
+              - maintenance
+          required: false
+          name: domain
+          in: query
+        - schema:
+            type: string
+            maxLength: 120
+          required: false
+          name: ruleKey
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleEvaluationPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/evaluations/{id}/resolve:
+    post:
+      operationId: resolveRuleEvaluation
+      summary: Resolve a queue item with reviewer notes (overridden needs compliance:approve)
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: compliance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveRuleEvaluation"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleEvaluation"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/evaluate:
+    post:
+      operationId: evaluateRules
+      summary: Evaluate the rules in force for a resource and record every hit in the review queue
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateRulesRequest"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluateRulesResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/{id}:
+    get:
+      operationId: getComplianceRule
+      summary: Get one rule version
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceRule"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/{id}/new-version:
+    post:
+      operationId: createComplianceRuleVersion
+      summary: Copy a rule into a new draft version (bumps version)
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: compliance:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewComplianceRuleVersion"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceRule"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/{id}/activate:
+    post:
+      operationId: activateComplianceRule
+      summary: Activate a draft version (approver must differ from author); retires earlier versions
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: compliance:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceRule"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /rules/{id}/retire:
+    post:
+      operationId: retireComplianceRule
+      summary: Retire a rule version
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: compliance:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceRule"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /jurisdiction/resolve:
+    get:
+      operationId: resolveJurisdiction
+      summary: Resolve the jurisdiction chain and active rule keys for a property
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: propertyId
+          in: query
+        - schema:
+            type: string
+            format: date-time
+          required: false
+          name: asOf
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JurisdictionResolution"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /jurisdiction/overrides:
+    get:
+      operationId: listJurisdictionOverrides
+      summary: List property jurisdiction overrides
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JurisdictionOverridePage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: upsertJurisdictionOverride
+      summary: Set a property jurisdiction override (accountable human; audited)
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: compliance:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJurisdictionOverride"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JurisdictionOverride"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /compliance/screen-text:
+    post:
+      operationId: screenText
+      summary: Flag protected-class or source-of-income language for human review
+      tags:
+        - compliance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: compliance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScreenTextRequest"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreenTextResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices:
+    get:
+      operationId: listNotices
+      summary: List notices (drafters, approvers and compliance readers)
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum:
+              - draft
+              - pending_approval
+              - approved
+              - sent
+              - rejected
+              - canceled
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            enum:
+              - late_rent
+              - lease_violation
+              - entry
+              - adverse_action
+              - termination
+              - general
+          required: false
+          name: kind
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: recipientId
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: leaseId
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoticePage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createNotice
+      summary: Draft a notice from a template; guard and notice rules run before it can be submitted
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:draft
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotice"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoticeWithGuard"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}:
+    get:
+      operationId: getNotice
+      summary: Get a notice
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: null
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}/submit:
+    post:
+      operationId: submitNotice
+      summary: Submit a draft for approval (blocked while a block-level rule hit is unresolved)
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:draft
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}/approve:
+    post:
+      operationId: approveNotice
+      summary: Approve a notice (approver cannot be the author)
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}/reject:
+    post:
+      operationId: rejectNotice
+      summary: Reject a pending notice with a note
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:approve
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectNotice"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}/send:
+    post:
+      operationId: sendNotice
+      summary: Mark an approved notice as sent and request delivery
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:draft
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}/cancel:
+    post:
+      operationId: cancelNotice
+      summary: Cancel a notice that has not been sent
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:draft
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /notices/{id}/reopen:
+    post:
+      operationId: reopenNotice
+      summary: Return a rejected notice to draft for edits
+      tags:
+        - notice
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: notice:draft
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
         "400":
           description: Validation error
           content:
