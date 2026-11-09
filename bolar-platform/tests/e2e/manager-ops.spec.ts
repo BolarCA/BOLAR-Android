@@ -124,6 +124,16 @@ test.describe('master admin control plane (Day 51) @smoke', () => {
 
   test('platform admin starts a support session for demo-pm, acts as that org with the banner, then ends it', async ({ page }) => {
     await login(page, DEMO.platform, /\/admin/);
+    // Re-runnable: a failed earlier attempt can leave an active session for demo-pm, which disables "Start support
+    // session" on the org page. End any such session first.
+    await page.goto('/admin/support-sessions');
+    await expect(page.getByRole('heading', { name: 'Support sessions' })).toBeVisible();
+    await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
+    const leftover = page.getByRole('button', { name: 'End support session for Demo Property Management' });
+    for (let n = await leftover.count(); n > 0; n = await leftover.count()) {
+      await leftover.first().click();
+      await expect(leftover).toHaveCount(n - 1);
+    }
     await page.goto('/admin/orgs');
     await page.getByRole('row', { name: /demo-pm/ }).getByRole('link', { name: 'Demo Property Management' }).click();
     await expect(page.getByRole('heading', { name: 'Demo Property Management' })).toBeVisible();
@@ -148,7 +158,11 @@ test.describe('master admin control plane (Day 51) @smoke', () => {
     await expect(banner).toContainText('Support session active');
     await expect(banner).toContainText('Demo Property Management');
     await expect(page.getByRole('main')).toContainText('Support session');
+    // Stopping reloads the overview without the org header; wait for that navigation to land before moving on, or the
+    // reload and the next goto race and the browser can end up back on /admin.
     await banner.getByRole('button', { name: 'Stop acting as org' }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByRole('heading', { name: 'Platform overview' })).toBeVisible();
     await expect(page.getByTestId('support-banner')).toHaveCount(0);
 
     // End the session from the sessions page.

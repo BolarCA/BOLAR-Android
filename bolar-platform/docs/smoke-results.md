@@ -48,6 +48,7 @@ serious and critical) reports no violations on any allowed portal landing or pri
 | 4 | Portal switcher order differed from API landing order | web | low | fixed: shell sorts by `/me` portals |
 | 5 | zod 4 `z.record` single-argument calls from merged slices | contracts | low | fixed |
 | 6 | First navigation to a cold page flaky when e2e ran against `next dev` (per-page compile on first request, load-dependent; seen on `/manager/tenants/[id]` and `/admin/feature-flags`), masked in CI by the retry | tests | medium | fixed: e2e web server now runs a production build (`helpers/web-server.ts`), so every route is compiled before the first test; expect timeout 10s |
+| 7 | `manager-ops.spec.ts` support-session test intermittently lost the row for its new session on `/admin/support-sessions` once e2e ran on the production build; a failed attempt also left an active session that disabled "Start support session" for every retry and later run | tests | low | fixed: test waits for the reload that "Stop acting as org" triggers before navigating on, and ends any leftover demo-pm session before it starts (re-runnable) |
 
 ## Known limits carried to the launch gate
 - Virus scanning is a no-op placeholder behind `VirusScanner`.
