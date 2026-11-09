@@ -1,0 +1,103 @@
+name: Counsel review
+description: Request legal review of a rule, template, notice, retention default, screening criterion or data production before it reaches users.
+title: "[Counsel] <artefact type>: <key or name>"
+labels: ["counsel-review", "compliance"]
+assignees: ["bolarca"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Required for every artefact listed in `bolar-platform/docs/counsel-review-map.md` and for every pull request
+        that touches the CODEOWNERS-protected modules (compliance, screening, finance, privacy, legal-hold, prisma).
+        Link this issue from the pull request's "Human approval" section. Counsel records the decision here; the
+        activation or approval in the product (Activate rule, Approve template version, Approve notice) is done by
+        the accountable person afterwards and is audited.
+  - type: dropdown
+    id: artefact
+    attributes:
+      label: Artefact type
+      options:
+        - Compliance rule (new or new version)
+        - Jurisdiction override
+        - Template (notice, adverse action, privacy confirmation, other high-risk)
+        - Notice wording for a specific case
+        - Retention or deletion default
+        - Screening criteria or consent language
+        - Legal hold scope or release
+        - Agency or law-enforcement data production
+        - Payments, deposits or fee schedule
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: key
+    attributes:
+      label: Key or identifier
+      description: Rule key (for example us-ca.deposit.max_one_month), template key, case id, policy key.
+    validations:
+      required: true
+  - type: input
+    id: jurisdiction
+    attributes:
+      label: Jurisdiction
+      description: ISO-style code used by the resolver (US, US-TX, US-CA, or a city code) or "all".
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source (statute, regulation, ordinance URL)
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk level
+      options:
+        - high (blocks, notices, adverse action, deletion, data production)
+        - medium
+        - low
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What changes and why
+      description: Plain language. For a rule, state the action level (warn, block, review) and the conditions. For a template, paste the body with its variables.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence prepared for review
+      description: Links to the draft in staging (rule version, template version), preview output ("Preview against sample facts" or "Render"), guard results, test fixtures, pull request.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Review checklist (from docs/counsel-review-map.md; tick what applies)
+      options:
+        - label: Source URL and effective date present; jurisdiction code specific and correct
+        - label: Action level matches legal risk; block reserved for clear statutory limits
+        - label: Required disclosures present (FCRA Summary of Rights, provider contact, dispute window) where relevant
+        - label: Lead times, cure periods and waiting periods match the jurisdiction; variables validated, no blanks
+        - label: Fair housing and source-of-income guard results reviewed and dispositioned
+        - label: Deletion exceptions (legal hold, retention, audit integrity, third parties) considered
+        - label: Legal basis, minimization and approver recorded (agency or law-enforcement requests)
+        - label: Deposit handling, fee caps and adjustment approvals confirmed (payments)
+        - label: Version history will show the activation with approver; previous version retired
+  - type: dropdown
+    id: decision
+    attributes:
+      label: Counsel decision (filled by counsel)
+      options:
+        - pending
+        - approved for pilot jurisdictions
+        - approved with changes (listed below)
+        - rejected
+  - type: textarea
+    id: decision_notes
+    attributes:
+      label: Decision notes and conditions
+      description: Required changes, jurisdictions excluded, review date. The same note is entered as the approval note in the product.

@@ -40,3 +40,14 @@ Each item needs evidence (link to CI run, screenshot, log excerpt) in the releas
 - [ ] Founder: unresolved blockers classified (accept / fix) in the risk register.
 
 Decision: GO / NO-GO - date - signatures.
+
+## Launch readiness documents (Days 105-120)
+
+- [Launch checklist (dated, owner-assigned tasks T-14 to T+1)](launch-checklist.md)
+- [Go/no-go record template](go-no-go-template.md)
+- [UAT scripts, defect triage and the last smoke run](uat/README.md)
+- [Training materials and admin onboarding checklist](training/README.md)
+- [Runbook: support and escalation](runbooks/support-escalation.md)
+- [Runbook: incident response](runbooks/incident-response.md)
+- [Runbook: monitoring and alerts](runbooks/monitoring-and-alerts.md)
+- [Runbook: backup restore drill](runbooks/restore-drill.md)

@@ -1,0 +1,106 @@
+name: Launch task
+description: One row of bolar-platform/docs/launch-checklist.md, tracked on the launch project board with its evidence.
+title: "[Launch] L-<id>: <task>"
+labels: ["launch"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Create one issue per checklist row. The task is done when the evidence link is in this issue, the owner has
+        ticked it and the release issue row is updated. Blocking tasks must be done before the go/no-go meeting
+        (`bolar-platform/docs/go-no-go-template.md`).
+  - type: input
+    id: task_id
+    attributes:
+      label: Checklist id
+      description: For example L-10.
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options:
+        - T-14
+        - T-7
+        - T-1
+        - Launch day
+        - T+1
+        - Incident (INC) tracking
+    validations:
+      required: true
+  - type: input
+    id: due
+    attributes:
+      label: Due date
+      description: From the checklist phase date (YYYY-MM-DD); re-dated by the release manager if the launch moves.
+    validations:
+      required: true
+  - type: dropdown
+    id: owner_role
+    attributes:
+      label: Owner role
+      options:
+        - release manager
+        - engineering lead
+        - on-call engineer
+        - web lead
+        - UAT lead
+        - support lead
+        - security lead
+        - finance lead
+        - data reviewer
+        - compliance lead
+        - counsel
+        - platform admin
+        - founder
+    validations:
+      required: true
+  - type: dropdown
+    id: gate_section
+    attributes:
+      label: Launch gate section (docs/launch-gate.md)
+      options:
+        - 1 Cross-portal demo
+        - 2 Data integrity
+        - 3 Compliance active
+        - 4 CI/CD green
+        - 5 Observability and resilience
+        - 6 Security and privacy
+        - 7 Human approvals recorded
+    validations:
+      required: true
+  - type: dropdown
+    id: blocking
+    attributes:
+      label: Blocking for go/no-go
+      options:
+        - "yes"
+        - "no"
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      description: Copy the task text from the checklist and add anything specific to this release.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Links to CI runs, workflow runs, drill output, screenshots (seed data only), audit exports. Added when done.
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Depends on
+      description: Other launch task ids or defects that must close first.
+  - type: checkboxes
+    id: done
+    attributes:
+      label: Completion
+      options:
+        - label: Evidence linked above and in the release issue
+        - label: Owner confirmed done on the date recorded in the release issue
+        - label: Related runbook or checklist updated if the task changed a procedure
