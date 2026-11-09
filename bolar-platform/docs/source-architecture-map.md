@@ -4,12 +4,12 @@ Every box in the blueprint's layered architecture (p3) mapped to a module, owner
 
 | Layer | Blueprint box | Module / location | Owner role | Phase | Status |
 | --- | --- | --- | --- | --- | --- |
-| L1 Portals | Master admin | `apps/web/app/(portals)/admin` | Frontend builder | Day 51 | shell built |
+| L1 Portals | Master admin | `apps/web/app/(portals)/admin` | Frontend builder | Day 51 | built |
 | L1 Portals | Subaccount admin | `apps/web/app/(portals)/subaccount` | Frontend builder | Day 11/15 | built |
-| L1 Portals | Landlord | `apps/web/app/(portals)/owner` | Frontend builder | Day 53 | in build |
-| L1 Portals | Property manager | `apps/web/app/(portals)/manager` | Frontend builder | Day 54 | in build |
-| L1 Portals | Tenant mobile/web | `apps/web/app/(portals)/tenant` | Frontend builder | Day 52 | in build |
-| L1 Portals | Corporate admin / occupant | `apps/web/app/(portals)/corporate-admin`, `occupant` | Frontend builder | V1 | stub |
+| L1 Portals | Landlord | `apps/web/app/(portals)/owner` | Frontend builder | Day 53 | built |
+| L1 Portals | Property manager | `apps/web/app/(portals)/manager` | Frontend builder | Day 54 | built |
+| L1 Portals | Tenant mobile/web | `apps/web/app/(portals)/tenant` | Frontend builder | Day 52 | built |
+| L1 Portals | Corporate admin / occupant | `apps/web/app/(portals)/corporate-admin`, `occupant` | Frontend builder | Day 55 | built (minimal dashboards) |
 | L1 Portals | Bookkeeper | `apps/web/app/(portals)/finance` | Finance slice | Day 36-40 | built |
 | L1 Portals | Lawyer | `apps/web/app/(portals)/legal` | Governance slice | Day 46-50 | built |
 | L1 Portals | Vendor | `apps/web/app/(portals)/vendor` | Maintenance slice | Day 31-35 | built |
