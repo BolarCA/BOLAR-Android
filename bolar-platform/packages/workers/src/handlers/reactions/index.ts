@@ -4,4 +4,5 @@ import './compliance.js';
 import './notification.js';
 import './maintenance.js';
 import './lease.js';
+import './governance.js';
 export {};

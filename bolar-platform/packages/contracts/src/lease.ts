@@ -25,7 +25,7 @@ export const addRecurringCharge = z
   .openapi('AddRecurringCharge');
 
 export const leaseVersion = z
-  .object({ id: idSchema, leaseId: idSchema, version: z.number().int(), termsJson: z.record(z.unknown()), documentId: idSchema.nullable(), createdBy: idSchema, createdAt: z.string() })
+  .object({ id: idSchema, leaseId: idSchema, version: z.number().int(), termsJson: z.record(z.string(), z.unknown()), documentId: idSchema.nullable(), createdBy: idSchema, createdAt: z.string() })
   .openapi('LeaseVersion');
 export const createLeaseVersion = z.object({ termsJson: termsJsonSchema, documentId: idSchema.optional() }).openapi('CreateLeaseVersion');
 
