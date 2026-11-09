@@ -67,7 +67,7 @@ infra/                    Deployment assets
 docs/                     Charter, glossary, ADRs, risk register, QA evidence, runbooks, launch gate
 ```
 
-## What is implemented (blueprint Days 1-60)
+## What is implemented (blueprint Days 1-120)
 
 | Area | Modules |
 | --- | --- |
@@ -76,6 +76,10 @@ docs/                     Charter, glossary, ADRs, risk register, QA evidence, r
 | Compliance | policy-as-code rule engine, jurisdiction resolver, fair housing / SOI guard, applications with consent-gated screening, FCRA adverse action, notices with approval |
 | Governance | retention policies and gated disposition, privacy (DSAR) workflow, legal holds, cases and agency requests, evidence packet exports |
 | Portals | admin, subaccount, manager (ops cockpit), owner dashboard, tenant mobile home, finance, legal, vendor, gov, compliance, corporate admin, occupant |
+| AI (Days 61-74) | assistant command router with tenant-scoped read-only tools, prompt-injection wrapping, PII redaction, AI audit and per-org budget; mock provider by default, Anthropic adapter behind `ANTHROPIC_MODE` |
+| Reporting (Days 75-90) | governed materialized views, KPI and report endpoints reconciled to the ledger, scheduled report runs with CSV/JSON exports |
+| Hardening (Days 91-104) | SLOs, rate limits, cached permissions with invalidation, bounded lists, queue backoff and worker idempotency, opt-in row-level security, latency histograms with optional OpenTelemetry/Sentry, k6 load scenarios |
+| Launch readiness (Days 105-120) | UAT scripts per persona, training guides, dated launch checklist, support/incident/monitoring runbooks, restore drill and UAT smoke scripts |
 
 QA evidence per slice lives in `docs/qa/`; runbooks in `docs/runbooks/`.
 

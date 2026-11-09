@@ -33,6 +33,6 @@ Every box in the blueprint's layered architecture (p3) mapped to a module, owner
 | L5 Core | Maintenance/vendors | `modules/maintenance`, `modules/vendor` | Maintenance slice | Day 31-35 | built |
 | L5 Core | Finance/ledger | `modules/finance` | Finance slice | Day 36-40 | built |
 | L6 Legal/Gov | Cases, agency requests, exports | `modules/legal`, `modules/packet-export` | Governance slice | Day 46-50 | built |
-| L7 AI/Reporting | Assistant, reports | `modules/ai` (deferred), materialised views | V1 | Day 61-90 | deferred |
+| L7 AI/Reporting | Assistant, reports | `modules/ai`, `modules/reporting` + rpt_* materialised views | AI and reporting slices | Day 61-90 | built |
 | L8 Data | PostgreSQL, Redis, object storage | `packages/db`, `shared/queue.ts`, `integrations/storage` | Data reviewer | Day 5/8/26 | built |
 | L9 External | Stripe, Plaid, SendGrid, Twilio, DocuSign, TransUnion, ID.me | `packages/integrations` | Integrations | Day 56-58 | mock + sandbox boundaries built |

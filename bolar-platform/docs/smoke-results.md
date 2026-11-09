@@ -8,11 +8,13 @@ Run date: 2026-11-09. Environment: local PostgreSQL 16, Redis 7, API on :4000, w
 
 | Suite | Tests | Result |
 | --- | --- | --- |
-| Unit and API (`pnpm test`: shared, integrations, db, api) | 9 + 12 + 5 + 196 | all passed |
-| Playwright end to end (11 specs) | 87 passed, 1 skipped by design (desktop run of a mobile-only test) | passed |
-| OpenAPI (`pnpm openapi:check`, Redocly lint) | 248 operations | valid |
-| Migration test (`pnpm db:migrate:test`) | 3 migrations on a scratch database | passed |
-| Docs lint, env check | 28 docs, 33 env keys | passed |
+| Unit and API (`pnpm test`: shared, integrations, db, workers, api) | 9 + 12 + 9 + 6 + 270 | all passed |
+| Playwright end to end (13 specs, Days 1-120) | 101 passed, 1 skipped by design (desktop run of a mobile-only test) | passed |
+| OpenAPI (`pnpm openapi:check`, Redocly lint) | 269 operations | valid |
+| Migration test (`pnpm db:migrate:test`) | 9 migrations on a scratch database (incl. RLS policies and reporting views) | passed |
+| Docs lint, env check | 74 docs, 52 env keys | passed |
+
+Final run on the complete Days 1-120 branch (MVP plus AI assistant, reporting, hardening and launch readiness).
 
 ## Cross-portal coverage (blueprint p301 "cross-portal demo")
 
@@ -29,6 +31,8 @@ Run date: 2026-11-09. Environment: local PostgreSQL 16, Redis 7, API on :4000, w
 | Compliance | compliance@demo.bolar.test | review queue evidence and resolution, rules catalog, notice approvals, manifest export |
 | Government | gov@demo.bolar.test | records request submission, exports, denied on legal workspace |
 | Corporate admin / occupant | corp@, occupant@demo.bolar.test | dashboards render with designed empty states, portal gating |
+| Assistant (V1) | manager, compliance | cited lease summary, notice draft routed to approval, vendor has no assistant, AI audit page |
+| Reports (V1) | bookkeeper, owner | KPIs reconciled to seed, scheduled CSV run and download, owner-scoped occupancy |
 
 Route matrix: all 12 personas x 12 portal bases; allowed portals render content with sidebar items equal to the
 permission-filtered nav; denied portals render the denied state with zero domain API calls. Axe (WCAG 2.0 A/AA,
