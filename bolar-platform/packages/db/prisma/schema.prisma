@@ -1171,3 +1171,54 @@ model FeatureFlag {
 
   @@unique([tenantOrgId, key])
 }
+
+// ───────────────────────────── Reporting and analytics (Days 75-90) ─────────────────────────────
+// KPI data lives in materialized views (rpt_*; see migrations/*_reporting_views). These two models hold the
+// scheduled report definitions and the export runs they produce.
+
+model ReportDefinition {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  name         String
+  kind         String // rent_roll | ar_aging | occupancy | maintenance_sla | collections | compliance_hits
+  filtersJson  Json      @default("{}")
+  /// Property scope captured at creation for non-staff creators (landlords); null = whole org.
+  scopeJson    Json?
+  scheduleCron String?
+  recipients   Json      @default("[]")
+  format       String    @default("csv") // csv | json
+  status       String    @default("active") // active | paused
+  createdBy    String
+  lastRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  runs ReportRun[]
+
+  @@index([tenantOrgId, status])
+  @@index([tenantOrgId, createdAt, id])
+}
+
+model ReportRun {
+  id           String    @id @default(cuid())
+  tenantOrgId  String
+  definitionId String
+  status       String    @default("requested") // requested | running | complete | failed
+  format       String
+  trigger      String    @default("manual") // manual | schedule | seed
+  rowCount     Int?
+  storageKey   String?
+  sha256       String?
+  error        String?
+  requestedBy  String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  definition ReportDefinition @relation(fields: [definitionId], references: [id])
+
+  @@index([tenantOrgId, definitionId, createdAt])
+  @@index([tenantOrgId, status])
+  @@index([tenantOrgId, createdAt, id])
+}

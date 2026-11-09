@@ -46,6 +46,8 @@ tags:
     description: Data subject requests
   - name: property
     description: Portfolios, properties, buildings and units
+  - name: reporting
+    description: reporting operations
   - name: retention
     description: Retention policies, assignments and gated disposition
   - name: screening
@@ -9139,6 +9141,1015 @@ components:
             - key
             - sizeBytes
             - sha256
+    ReportKpis:
+      type: object
+      properties:
+        refreshedAt:
+          type:
+            - string
+            - "null"
+        staleSeconds:
+          type:
+            - integer
+            - "null"
+        scope:
+          type: string
+          enum:
+            - org
+            - properties
+        propertyCount:
+          type: integer
+        rentRoll:
+          type: object
+          properties:
+            activeLeases:
+              type: integer
+            monthlyRentCents:
+              type: integer
+          required:
+            - activeLeases
+            - monthlyRentCents
+        arAging:
+          type: object
+          properties:
+            openInvoices:
+              type: integer
+            balanceCents:
+              type: integer
+            overdueCents:
+              type: integer
+          required:
+            - openInvoices
+            - balanceCents
+            - overdueCents
+        occupancy:
+          type: object
+          properties:
+            totalUnits:
+              type: integer
+            occupiedUnits:
+              type: integer
+            occupancyPct:
+              type: number
+          required:
+            - totalUnits
+            - occupiedUnits
+            - occupancyPct
+        collections:
+          type: object
+          properties:
+            thisMonthCents:
+              type: integer
+            trailing12Cents:
+              type: integer
+            ledgerCashTrailing12Cents:
+              type: integer
+          required:
+            - thisMonthCents
+            - trailing12Cents
+            - ledgerCashTrailing12Cents
+        maintenanceSla:
+          type: object
+          properties:
+            completedOrders:
+              type: integer
+            completedWithinSla:
+              type: integer
+            slaCompliancePct:
+              type: number
+            breachedOpen:
+              type: integer
+          required:
+            - completedOrders
+            - completedWithinSla
+            - slaCompliancePct
+            - breachedOpen
+        complianceHits:
+          type:
+            - object
+            - "null"
+          properties:
+            total:
+              type: integer
+            open:
+              type: integer
+            critical:
+              type: integer
+          required:
+            - total
+            - open
+            - critical
+      required:
+        - refreshedAt
+        - staleSeconds
+        - scope
+        - propertyCount
+        - rentRoll
+        - arAging
+        - occupancy
+        - collections
+        - maintenanceSla
+        - complianceHits
+    ReportRefreshResponse:
+      type: object
+      properties:
+        refreshedAt:
+          type: string
+        durationMs:
+          type: integer
+      required:
+        - refreshedAt
+        - durationMs
+    RentRollReport:
+      allOf:
+        - $ref: "#/components/schemas/RentRollRowPage"
+        - type: object
+          properties:
+            totals:
+              type: object
+              properties:
+                leases:
+                  type: integer
+                rentCents:
+                  type: integer
+              required:
+                - leases
+                - rentCents
+            refreshedAt:
+              type:
+                - string
+                - "null"
+          required:
+            - totals
+            - refreshedAt
+    RentRollRow:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyName:
+          type: string
+        unitId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        unitNumber:
+          type: string
+        tenantProfileId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        tenantName:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        rentCents:
+          type: integer
+        depositCents:
+          type: integer
+        targetRentCents:
+          type: integer
+      required:
+        - id
+        - leaseId
+        - propertyId
+        - propertyName
+        - unitId
+        - unitNumber
+        - tenantProfileId
+        - tenantName
+        - status
+        - startDate
+        - endDate
+        - rentCents
+        - depositCents
+        - targetRentCents
+    RentRollRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RentRollRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ArAgingReport:
+      allOf:
+        - $ref: "#/components/schemas/ArAgingRowPage"
+        - type: object
+          properties:
+            totals:
+              $ref: "#/components/schemas/ArAgingBuckets"
+            refreshedAt:
+              type:
+                - string
+                - "null"
+          required:
+            - totals
+            - refreshedAt
+    ArAgingRow:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        invoiceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyName:
+          type: string
+        unitNumber:
+          type: string
+        tenantProfileId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        tenantName:
+          type:
+            - string
+            - "null"
+        number:
+          type: string
+        status:
+          type: string
+        dueDate:
+          type: string
+        totalCents:
+          type: integer
+        paidCents:
+          type: integer
+        balanceCents:
+          type: integer
+        daysPastDue:
+          type: integer
+        bucket:
+          type: string
+          enum:
+            - current
+            - 1_30
+            - 31_60
+            - 61_90
+            - 90_plus
+      required:
+        - id
+        - invoiceId
+        - leaseId
+        - propertyId
+        - propertyName
+        - unitNumber
+        - tenantProfileId
+        - tenantName
+        - number
+        - status
+        - dueDate
+        - totalCents
+        - paidCents
+        - balanceCents
+        - daysPastDue
+        - bucket
+    ArAgingBuckets:
+      type: object
+      properties:
+        currentCents:
+          type: integer
+        d1to30Cents:
+          type: integer
+        d31to60Cents:
+          type: integer
+        d61to90Cents:
+          type: integer
+        d90PlusCents:
+          type: integer
+        totalCents:
+          type: integer
+        invoices:
+          type: integer
+      required:
+        - currentCents
+        - d1to30Cents
+        - d31to60Cents
+        - d61to90Cents
+        - d90PlusCents
+        - totalCents
+        - invoices
+    ArAgingRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArAgingRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    OccupancyReport:
+      allOf:
+        - $ref: "#/components/schemas/OccupancyRowPage"
+        - type: object
+          properties:
+            totals:
+              type: object
+              properties:
+                properties:
+                  type: integer
+                totalUnits:
+                  type: integer
+                occupiedUnits:
+                  type: integer
+                occupancyPct:
+                  type: number
+                scheduledRentCents:
+                  type: integer
+              required:
+                - properties
+                - totalUnits
+                - occupiedUnits
+                - occupancyPct
+                - scheduledRentCents
+            refreshedAt:
+              type:
+                - string
+                - "null"
+          required:
+            - totals
+            - refreshedAt
+    OccupancyRow:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyName:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        propertyStatus:
+          type: string
+        totalUnits:
+          type: integer
+        occupiedUnits:
+          type: integer
+        vacantUnits:
+          type: integer
+        noticeUnits:
+          type: integer
+        otherUnits:
+          type: integer
+        occupancyPct:
+          type: number
+        activeLeases:
+          type: integer
+        scheduledRentCents:
+          type: integer
+        targetRentCents:
+          type: integer
+      required:
+        - id
+        - propertyId
+        - propertyName
+        - city
+        - state
+        - propertyStatus
+        - totalUnits
+        - occupiedUnits
+        - vacantUnits
+        - noticeUnits
+        - otherUnits
+        - occupancyPct
+        - activeLeases
+        - scheduledRentCents
+        - targetRentCents
+    OccupancyRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OccupancyRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    MaintenanceSlaReport:
+      allOf:
+        - $ref: "#/components/schemas/MaintenanceSlaRowPage"
+        - type: object
+          properties:
+            totals:
+              type: object
+              properties:
+                totalOrders:
+                  type: integer
+                openOrders:
+                  type: integer
+                completedOrders:
+                  type: integer
+                completedWithinSla:
+                  type: integer
+                breachedOpen:
+                  type: integer
+                slaCompliancePct:
+                  type: number
+              required:
+                - totalOrders
+                - openOrders
+                - completedOrders
+                - completedWithinSla
+                - breachedOpen
+                - slaCompliancePct
+            refreshedAt:
+              type:
+                - string
+                - "null"
+          required:
+            - totals
+            - refreshedAt
+    MaintenanceSlaRow:
+      type: object
+      properties:
+        id:
+          type: string
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyName:
+          type: string
+        priority:
+          type: string
+        totalOrders:
+          type: integer
+        openOrders:
+          type: integer
+        completedOrders:
+          type: integer
+        measuredOrders:
+          type: integer
+        completedWithinSla:
+          type: integer
+        completedLate:
+          type: integer
+        breachedOpen:
+          type: integer
+        slaCompliancePct:
+          type: number
+        avgHoursToComplete:
+          type:
+            - number
+            - "null"
+      required:
+        - id
+        - propertyId
+        - propertyName
+        - priority
+        - totalOrders
+        - openOrders
+        - completedOrders
+        - measuredOrders
+        - completedWithinSla
+        - completedLate
+        - breachedOpen
+        - slaCompliancePct
+        - avgHoursToComplete
+    MaintenanceSlaRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaintenanceSlaRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    CollectionsReport:
+      allOf:
+        - $ref: "#/components/schemas/CollectionsRowPage"
+        - type: object
+          properties:
+            byMonth:
+              type: array
+              items:
+                $ref: "#/components/schemas/CollectionsMonth"
+            totals:
+              type: object
+              properties:
+                collectedCents:
+                  type: integer
+                invoicedCents:
+                  type: integer
+                ledgerCashCents:
+                  type: integer
+                reconciled:
+                  type: boolean
+              required:
+                - collectedCents
+                - invoicedCents
+                - ledgerCashCents
+                - reconciled
+            months:
+              type: integer
+            refreshedAt:
+              type:
+                - string
+                - "null"
+          required:
+            - byMonth
+            - totals
+            - months
+            - refreshedAt
+    CollectionsRow:
+      type: object
+      properties:
+        id:
+          type: string
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        propertyName:
+          type: string
+        month:
+          type: string
+        paymentsCount:
+          type: integer
+        collectedCents:
+          type: integer
+        invoicesCount:
+          type: integer
+        invoicedCents:
+          type: integer
+        ledgerCashCents:
+          type: integer
+      required:
+        - id
+        - propertyId
+        - propertyName
+        - month
+        - paymentsCount
+        - collectedCents
+        - invoicesCount
+        - invoicedCents
+        - ledgerCashCents
+    CollectionsMonth:
+      type: object
+      properties:
+        month:
+          type: string
+        collectedCents:
+          type: integer
+        invoicedCents:
+          type: integer
+        ledgerCashCents:
+          type: integer
+        paymentsCount:
+          type: integer
+      required:
+        - month
+        - collectedCents
+        - invoicedCents
+        - ledgerCashCents
+        - paymentsCount
+    CollectionsRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionsRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ComplianceHitsReport:
+      allOf:
+        - $ref: "#/components/schemas/ComplianceHitsRowPage"
+        - type: object
+          properties:
+            totals:
+              type: object
+              properties:
+                hits:
+                  type: integer
+                open:
+                  type: integer
+                bySeverity:
+                  type: object
+                  additionalProperties:
+                    type: integer
+                byResolution:
+                  type: object
+                  additionalProperties:
+                    type: integer
+              required:
+                - hits
+                - open
+                - bySeverity
+                - byResolution
+            refreshedAt:
+              type:
+                - string
+                - "null"
+          required:
+            - totals
+            - refreshedAt
+    ComplianceHitsRow:
+      type: object
+      properties:
+        id:
+          type: string
+        severity:
+          type: string
+        result:
+          type: string
+        resolution:
+          type: string
+        domain:
+          type: string
+        hits:
+          type: integer
+        firstHitAt:
+          type: string
+        lastHitAt:
+          type: string
+      required:
+        - id
+        - severity
+        - result
+        - resolution
+        - domain
+        - hits
+        - firstHitAt
+        - lastHitAt
+    ComplianceHitsRowPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComplianceHitsRow"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ReportDefinitionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportDefinition"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ReportDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+            - rent_roll
+            - ar_aging
+            - occupancy
+            - maintenance_sla
+            - collections
+            - compliance_hits
+        filtersJson:
+          $ref: "#/components/schemas/ReportFilters"
+        scopeJson:
+          type:
+            - object
+            - "null"
+          properties:
+            propertyIds:
+              type: array
+              items:
+                type: string
+                minLength: 1
+                maxLength: 64
+          required:
+            - propertyIds
+        scheduleCron:
+          type:
+            - string
+            - "null"
+        recipients:
+          type: array
+          items:
+            type: string
+        format:
+          type: string
+          enum:
+            - csv
+            - json
+        status:
+          type: string
+          enum:
+            - active
+            - paused
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 64
+        lastRunAt:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - kind
+        - filtersJson
+        - scopeJson
+        - scheduleCron
+        - recipients
+        - format
+        - status
+        - createdBy
+        - lastRunAt
+        - createdAt
+        - updatedAt
+    ReportFilters:
+      type: object
+      properties:
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        from:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        to:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        months:
+          type: integer
+          minimum: 1
+          maximum: 36
+        priority:
+          type: string
+          enum:
+            - emergency
+            - high
+            - normal
+            - low
+        bucket:
+          type: string
+          enum:
+            - current
+            - 1_30
+            - 31_60
+            - 61_90
+            - 90_plus
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+    CreateReportDefinition:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 120
+        kind:
+          type: string
+          enum:
+            - rent_roll
+            - ar_aging
+            - occupancy
+            - maintenance_sla
+            - collections
+            - compliance_hits
+        filters:
+          $ref: "#/components/schemas/ReportFilters"
+        scheduleCron:
+          type:
+            - string
+            - "null"
+        recipients:
+          type: array
+          items:
+            type: string
+            maxLength: 254
+            format: email
+          maxItems: 20
+          default: []
+        format:
+          type: string
+          enum:
+            - csv
+            - json
+          default: csv
+      required:
+        - name
+        - kind
+    ReportRun:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        definitionId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        definitionName:
+          type:
+            - string
+            - "null"
+        kind:
+          type:
+            - string
+            - "null"
+          enum:
+            - rent_roll
+            - ar_aging
+            - occupancy
+            - maintenance_sla
+            - collections
+            - compliance_hits
+            - null
+        status:
+          type: string
+          enum:
+            - requested
+            - running
+            - complete
+            - failed
+        format:
+          type: string
+          enum:
+            - csv
+            - json
+        trigger:
+          type: string
+        rowCount:
+          type:
+            - integer
+            - "null"
+        storageKey:
+          type:
+            - string
+            - "null"
+        sha256:
+          type:
+            - string
+            - "null"
+        error:
+          type:
+            - string
+            - "null"
+        requestedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        startedAt:
+          type:
+            - string
+            - "null"
+        completedAt:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - definitionId
+        - definitionName
+        - kind
+        - status
+        - format
+        - trigger
+        - rowCount
+        - storageKey
+        - sha256
+        - error
+        - requestedBy
+        - startedAt
+        - completedAt
+        - createdAt
+        - updatedAt
+    ReportRunPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportRun"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    ReportRunDetail:
+      allOf:
+        - $ref: "#/components/schemas/ReportRun"
+        - type: object
+          properties:
+            download:
+              type:
+                - object
+                - "null"
+              properties:
+                url:
+                  type: string
+                expiresAt:
+                  type: string
+              required:
+                - url
+                - expiresAt
+          required:
+            - download
     HealthSummary:
       type: object
       properties:
@@ -27547,6 +28558,1358 @@ paths:
                 $ref: "#/components/schemas/StoragePutResult"
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/kpis:
+    get:
+      operationId: getReportKpis
+      summary: Headline KPIs from the governed views with a freshness timestamp (refreshes inline when stale)
+      tags: &a2
+        - reporting
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportKpis"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/refresh:
+    post:
+      operationId: refreshReports
+      summary: Refresh every reporting materialized view (staff only)
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportRefreshResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/rent-roll:
+    get:
+      operationId: getRentRollReport
+      summary: "Rent roll: active leases with rent, unit and tenant (landlords: own properties)"
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+          required: false
+          name: months
+          in: query
+        - schema:
+            type: string
+            enum:
+              - emergency
+              - high
+              - normal
+              - low
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: string
+            enum:
+              - current
+              - 1_30
+              - 31_60
+              - 61_90
+              - 90_plus
+          required: false
+          name: bucket
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentRollReport"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/ar-aging:
+    get:
+      operationId: getArAgingReport
+      summary: "AR aging: outstanding invoices bucketed by days past due (staff only)"
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+          required: false
+          name: months
+          in: query
+        - schema:
+            type: string
+            enum:
+              - emergency
+              - high
+              - normal
+              - low
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: string
+            enum:
+              - current
+              - 1_30
+              - 31_60
+              - 61_90
+              - 90_plus
+          required: false
+          name: bucket
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArAgingReport"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/occupancy:
+    get:
+      operationId: getOccupancyReport
+      summary: "Occupancy by property (landlords: own properties)"
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+          required: false
+          name: months
+          in: query
+        - schema:
+            type: string
+            enum:
+              - emergency
+              - high
+              - normal
+              - low
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: string
+            enum:
+              - current
+              - 1_30
+              - 31_60
+              - 61_90
+              - 90_plus
+          required: false
+          name: bucket
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancyReport"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/maintenance-sla:
+    get:
+      operationId: getMaintenanceSlaReport
+      summary: Maintenance SLA compliance by property and priority
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+          required: false
+          name: months
+          in: query
+        - schema:
+            type: string
+            enum:
+              - emergency
+              - high
+              - normal
+              - low
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: string
+            enum:
+              - current
+              - 1_30
+              - 31_60
+              - 61_90
+              - 90_plus
+          required: false
+          name: bucket
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaintenanceSlaReport"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/collections:
+    get:
+      operationId: getCollectionsReport
+      summary: Monthly collections by property with ledger reconciliation (months=12 by default)
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+          required: false
+          name: months
+          in: query
+        - schema:
+            type: string
+            enum:
+              - emergency
+              - high
+              - normal
+              - low
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: string
+            enum:
+              - current
+              - 1_30
+              - 31_60
+              - 61_90
+              - 90_plus
+          required: false
+          name: bucket
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionsReport"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/compliance-hits:
+    get:
+      operationId: getComplianceHitsReport
+      summary: Compliance hits by severity, result, resolution and domain (staff only)
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: propertyId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+          required: false
+          name: months
+          in: query
+        - schema:
+            type: string
+            enum:
+              - emergency
+              - high
+              - normal
+              - low
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: string
+            enum:
+              - current
+              - 1_30
+              - 31_60
+              - 61_90
+              - 90_plus
+          required: false
+          name: bucket
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          required: false
+          name: severity
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceHitsReport"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/definitions:
+    get:
+      operationId: listReportDefinitions
+      summary: Scheduled report definitions (own for landlords, all for staff)
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum:
+              - rent_roll
+              - ar_aging
+              - occupancy
+              - maintenance_sla
+              - collections
+              - compliance_hits
+          required: false
+          name: kind
+          in: query
+        - schema:
+            type: string
+            enum:
+              - active
+              - paused
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportDefinitionPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createReportDefinition
+      summary: Create a report definition (kind, filters, cron schedule, recipients, csv|json). Landlord definitions are pinned to their properties.
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportDefinition"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportDefinition"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/definitions/{id}/run:
+    post:
+      operationId: runReportDefinition
+      summary: "Run a report definition now: creates a ReportRun and enqueues the `reports` job (inline when QUEUE_DRIVER=memory)"
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportRun"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/runs:
+    get:
+      operationId: listReportRuns
+      summary: Report runs (own definitions for landlords, all for staff)
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: definitionId
+          in: query
+        - schema:
+            type: string
+            enum:
+              - requested
+              - running
+              - complete
+              - failed
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportRunPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /reports/runs/{id}:
+    get:
+      operationId: getReportRun
+      summary: Report run status with a short-lived signed download URL when complete
+      tags: *a2
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          description: Declared purpose for sensitive data access.
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportRunDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
           content:
             application/json:
               schema:

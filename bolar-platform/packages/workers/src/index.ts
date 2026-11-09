@@ -25,6 +25,12 @@ import('bullmq').then(async ({ Queue }) => {
   await q.upsertJobScheduler('daily-retention-sweep', { pattern: process.env.RETENTION_SWEEP_CRON ?? '0 3 * * *' }, { name: 'retention-sweep', data: {} });
   await q.close();
 }).catch((err) => logger.error({ err }, 'failed to schedule retention sweep'));
+// Daily reporting job: refresh the rpt_* materialized views and run scheduled report definitions due today (Days 75-90).
+import('bullmq').then(async ({ Queue }) => {
+  const q = new Queue('reports', { connection });
+  await q.upsertJobScheduler('daily-reporting-refresh', { pattern: process.env.REPORTING_REFRESH_CRON ?? '0 4 * * *' }, { name: 'reports', data: { kind: 'daily' } });
+  await q.close();
+}).catch((err) => logger.error({ err }, 'failed to schedule daily reporting refresh'));
 logger.info({ queues: Object.keys(handlers) }, 'bolar-workers started');
 
 async function shutdown() {
