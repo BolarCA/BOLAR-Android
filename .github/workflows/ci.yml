@@ -33,6 +33,8 @@ jobs:
       QUEUE_DRIVER: memory
       AUTH_JWT_SECRET: ci_only_secret_ci_only_secret_ci_only_secret_000
       NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+      # `pnpm build` above produces the web build the e2e server runs from
+      E2E_REUSE_WEB_BUILD: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
