@@ -10,6 +10,7 @@ servers:
 tags:
   - name: audit
   - name: auth
+  - name: finance
   - name: health
   - name: iam
   - name: integrations
@@ -2247,6 +2248,1066 @@ components:
             - ignored
       required:
         - outcome
+    LedgerAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: &a9
+            - asset
+            - liability
+            - equity
+            - income
+            - expense
+        isSystem:
+          type: boolean
+        propertyId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        parentId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+      required:
+        - id
+        - code
+        - name
+        - type
+        - isSystem
+        - propertyId
+        - parentId
+        - createdAt
+    LedgerAccountPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerAccount"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    CreateLedgerAccount:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^\d{4}$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        type:
+          type: string
+          enum: *a9
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        parentId:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required:
+        - code
+        - name
+        - type
+    UpdateLedgerAccount:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        type:
+          type: string
+          enum: *a9
+        propertyId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        parentId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+    SeedDefaultAccountsResponse:
+      type: object
+      properties:
+        created:
+          type: integer
+        existing:
+          type: integer
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerAccount"
+      required:
+        - created
+        - existing
+        - accounts
+    LedgerLine:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        journalEntryId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        accountId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        accountCode:
+          type: string
+        accountName:
+          type: string
+        propertyId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        debitCents:
+          type: integer
+        creditCents:
+          type: integer
+        memo:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - journalEntryId
+        - accountId
+        - accountCode
+        - accountName
+        - propertyId
+        - debitCents
+        - creditCents
+        - memo
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        sourceType:
+          type: string
+          enum: &a10
+            - invoice
+            - payment
+            - adjustment
+            - reversal
+            - opening_balance
+        sourceId:
+          type: string
+        memo:
+          type:
+            - string
+            - "null"
+        idempotencyKey:
+          type:
+            - string
+            - "null"
+        reversalOfId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        postedBy:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        postedAt:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+          enum:
+            - posted
+            - pending
+        createdAt:
+          type: string
+        totalDebitCents:
+          type: integer
+        totalCreditCents:
+          type: integer
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerLine"
+      required:
+        - id
+        - sourceType
+        - sourceId
+        - memo
+        - idempotencyKey
+        - reversalOfId
+        - postedBy
+        - postedAt
+        - status
+        - createdAt
+        - totalDebitCents
+        - totalCreditCents
+        - lines
+    JournalEntryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JournalEntry"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    JournalLineInput:
+      type: object
+      properties:
+        accountCode:
+          type: string
+          pattern: ^\d{4}$
+        debitCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+          default: 0
+        creditCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+          default: 0
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        memo:
+          type: string
+          maxLength: 240
+      required:
+        - accountCode
+    CreateJournalEntry:
+      type: object
+      properties:
+        sourceType:
+          type: string
+          enum:
+            - adjustment
+            - opening_balance
+          default: adjustment
+        sourceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          default: manual
+        memo:
+          type: string
+          minLength: 3
+          maxLength: 500
+        idempotencyKey:
+          type: string
+          minLength: 8
+          maxLength: 128
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/JournalLineInput"
+          minItems: 2
+          maxItems: 200
+      required:
+        - memo
+        - lines
+    ReverseJournalEntry:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+      required:
+        - reason
+    TrialBalanceRow:
+      type: object
+      properties:
+        accountId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: *a9
+        debitCents:
+          type: integer
+        creditCents:
+          type: integer
+        balanceCents:
+          type: integer
+      required:
+        - accountId
+        - code
+        - name
+        - type
+        - debitCents
+        - creditCents
+        - balanceCents
+    TrialBalance:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrialBalanceRow"
+        totalDebitCents:
+          type: integer
+        totalCreditCents:
+          type: integer
+        balanced:
+          type: boolean
+        asOf:
+          type: string
+      required:
+        - rows
+        - totalDebitCents
+        - totalCreditCents
+        - balanced
+        - asOf
+    LedgerProof:
+      type: object
+      properties:
+        totalDebitCents:
+          type: integer
+        totalCreditCents:
+          type: integer
+        balanced:
+          type: boolean
+        postedEntries:
+          type: integer
+        unbalancedEntries:
+          type: integer
+        pendingEntries:
+          type: integer
+        checkedAt:
+          type: string
+      required:
+        - totalDebitCents
+        - totalCreditCents
+        - balanced
+        - postedEntries
+        - unbalancedEntries
+        - pendingEntries
+        - checkedAt
+    LedgerAccountEntry:
+      allOf:
+        - $ref: "#/components/schemas/LedgerLine"
+        - type: object
+          properties:
+            postedAt:
+              type:
+                - string
+                - "null"
+            sourceType:
+              type: string
+              enum: *a10
+            sourceId:
+              type: string
+            journalMemo:
+              type:
+                - string
+                - "null"
+            runningBalanceCents:
+              type: integer
+          required:
+            - postedAt
+            - sourceType
+            - sourceId
+            - journalMemo
+    LedgerAccountEntryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerAccountEntry"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tenantProfileId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        number:
+          type: string
+        status:
+          type: string
+          enum: &a11
+            - draft
+            - open
+            - partially_paid
+            - paid
+            - void
+            - overdue
+        periodStart:
+          type:
+            - string
+            - "null"
+        periodEnd:
+          type:
+            - string
+            - "null"
+        dueDate:
+          type: string
+        totalCents:
+          type: integer
+        paidCents:
+          type: integer
+        balanceCents:
+          type: integer
+        issuedAt:
+          type:
+            - string
+            - "null"
+        voidedAt:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        tenantName:
+          type:
+            - string
+            - "null"
+        propertyName:
+          type:
+            - string
+            - "null"
+        unitNumber:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - leaseId
+        - tenantProfileId
+        - number
+        - status
+        - periodStart
+        - periodEnd
+        - dueDate
+        - totalCents
+        - paidCents
+        - balanceCents
+        - issuedAt
+        - voidedAt
+        - createdAt
+        - updatedAt
+        - tenantName
+        - propertyName
+        - unitNumber
+    InvoicePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Invoice"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    AgingBuckets:
+      type: object
+      properties:
+        currentCents:
+          type: integer
+        d1to30Cents:
+          type: integer
+        d31to60Cents:
+          type: integer
+        d61to90Cents:
+          type: integer
+        d90PlusCents:
+          type: integer
+        totalCents:
+          type: integer
+      required:
+        - currentCents
+        - d1to30Cents
+        - d31to60Cents
+        - d61to90Cents
+        - d90PlusCents
+        - totalCents
+    InvoiceAging:
+      type: object
+      properties:
+        asOf:
+          type: string
+        totals:
+          $ref: "#/components/schemas/AgingBuckets"
+        byTenant:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/AgingBuckets"
+              - type: object
+                properties:
+                  tenantProfileId:
+                    type:
+                      - string
+                      - "null"
+                    minLength: 1
+                    maxLength: 64
+                  displayName:
+                    type: string
+                  invoiceCount:
+                    type: integer
+                required:
+                  - tenantProfileId
+                  - displayName
+                  - invoiceCount
+      required:
+        - asOf
+        - totals
+        - byTenant
+    GenerateInvoicesResponse:
+      type: object
+      properties:
+        period:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+        created:
+          type: integer
+        skipped:
+          type: integer
+        invoiceIds:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+      required:
+        - period
+        - created
+        - skipped
+        - invoiceIds
+    GenerateInvoices:
+      type: object
+      properties:
+        period:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+      required:
+        - period
+    MarkOverdueResponse:
+      type: object
+      properties:
+        updated:
+          type: integer
+        asOf:
+          type: string
+      required:
+        - updated
+        - asOf
+    InvoiceLine:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description:
+          type: string
+        accountCode:
+          type: string
+        amountCents:
+          type: integer
+        chargeId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+      required:
+        - id
+        - description
+        - accountCode
+        - amountCents
+        - chargeId
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        invoiceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        invoiceNumber:
+          type:
+            - string
+            - "null"
+        provider:
+          type: string
+        method:
+          type: string
+          enum: &a12
+            - ach
+            - card
+            - check
+            - cash
+            - other
+        status:
+          type: string
+          enum: &a13
+            - pending
+            - succeeded
+            - failed
+            - refunded
+            - disputed
+            - canceled
+        amountCents:
+          type: integer
+        externalId:
+          type:
+            - string
+            - "null"
+        failureReason:
+          type:
+            - string
+            - "null"
+        receivedAt:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - invoiceId
+        - invoiceNumber
+        - provider
+        - method
+        - status
+        - amountCents
+        - externalId
+        - failureReason
+        - receivedAt
+        - createdAt
+        - updatedAt
+    InvoiceDetail:
+      allOf:
+        - $ref: "#/components/schemas/Invoice"
+        - type: object
+          properties:
+            lines:
+              type: array
+              items:
+                $ref: "#/components/schemas/InvoiceLine"
+            payments:
+              type: array
+              items:
+                $ref: "#/components/schemas/Payment"
+            lease:
+              type: object
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                status:
+                  type: string
+                propertyId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                unitId:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                propertyName:
+                  type: string
+                unitNumber:
+                  type: string
+                startDate:
+                  type: string
+                endDate:
+                  type: string
+                rentCents:
+                  type: integer
+              required:
+                - id
+                - status
+                - propertyId
+                - unitId
+                - propertyName
+                - unitNumber
+                - startDate
+                - endDate
+                - rentCents
+            tenant:
+              type:
+                - object
+                - "null"
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                displayName:
+                  type: string
+                status:
+                  type: string
+              required:
+                - id
+                - displayName
+                - status
+            journalEntryIds:
+              type: array
+              items:
+                type: string
+                minLength: 1
+                maxLength: 64
+          required:
+            - lines
+            - payments
+            - lease
+            - tenant
+            - journalEntryIds
+    CreateInvoiceLine:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 240
+        accountCode:
+          type: string
+          pattern: ^\d{4}$
+          default: "4000"
+        amountCents:
+          type: integer
+          minimum: 1
+          maximum: 100000000000
+      required:
+        - description
+        - amountCents
+    CreateInvoice:
+      type: object
+      properties:
+        leaseId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        dueDate:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        periodStart:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        periodEnd:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateInvoiceLine"
+          minItems: 1
+          maxItems: 50
+      required:
+        - leaseId
+        - dueDate
+        - lines
+    VoidInvoice:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+      required:
+        - reason
+    PaymentPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
+    PaymentEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        type:
+          type: string
+        externalEventId:
+          type: string
+        processedAt:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+        payload: {}
+      required:
+        - id
+        - type
+        - externalEventId
+        - processedAt
+        - createdAt
+    PaymentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Payment"
+        - type: object
+          properties:
+            events:
+              type: array
+              items:
+                $ref: "#/components/schemas/PaymentEvent"
+            invoice:
+              type: object
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                number:
+                  type: string
+                status:
+                  type: string
+                  enum: *a11
+                totalCents:
+                  type: integer
+                paidCents:
+                  type: integer
+              required:
+                - id
+                - number
+                - status
+                - totalCents
+                - paidCents
+          required:
+            - events
+            - invoice
+    CreatePayment:
+      type: object
+      properties:
+        invoiceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        amountCents:
+          type: integer
+          minimum: 1
+          maximum: 100000000000
+        method:
+          type: string
+          enum: *a12
+          default: card
+        paymentMethodRef:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+        - invoiceId
+        - amountCents
+        - paymentMethodRef
+    RefundPayment:
+      type: object
+      properties:
+        amountCents:
+          type: integer
+          minimum: 1
+          maximum: 100000000000
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+      required:
+        - amountCents
+        - reason
+    BankLinkToken:
+      type: object
+      properties:
+        linkToken:
+          type: string
+        expiresAt:
+          type: string
+        mode:
+          type: string
+          enum:
+            - mock
+            - sandbox
+            - production
+      required:
+        - linkToken
+        - expiresAt
+        - mode
+    BankLinkTokenRequest:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            type: string
+            enum:
+              - auth
+              - transactions
+          minItems: 1
+          default:
+            - auth
+    BankLinkExchangeResult:
+      type: object
+      properties:
+        accessTokenRef:
+          type: string
+        accountMask:
+          type: string
+        institution:
+          type: string
+        persisted:
+          type: boolean
+          enum:
+            - false
+        note:
+          type: string
+      required:
+        - accessTokenRef
+        - accountMask
+        - institution
+        - persisted
+        - note
+    BankLinkExchangeRequest:
+      type: object
+      properties:
+        publicToken:
+          type: string
+          minLength: 1
+          maxLength: 512
+      required:
+        - publicToken
+    FinanceSummary:
+      type: object
+      properties:
+        asOf:
+          type: string
+        openArCents:
+          type: integer
+        openInvoices:
+          type: integer
+        overdueCents:
+          type: integer
+        overdueInvoices:
+          type: integer
+        collectedThisMonthCents:
+          type: integer
+        failedPayments30d:
+          type: integer
+        pendingAdjustments:
+          type: integer
+        trialBalanced:
+          type: boolean
+        unbalancedEntries:
+          type: integer
+        paymentsMode:
+          type: string
+          enum:
+            - mock
+            - sandbox
+            - production
+      required:
+        - asOf
+        - openArCents
+        - openInvoices
+        - overdueCents
+        - overdueInvoices
+        - collectedThisMonthCents
+        - failedPayments30d
+        - pendingAdjustments
+        - trialBalanced
+        - unbalancedEntries
+        - paymentsMode
   parameters: {}
 paths:
   /health:
@@ -6341,6 +7402,1977 @@ paths:
                 $ref: "#/components/schemas/WebhookOutcome"
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /accounts:
+    get:
+      operationId: listAccounts
+      summary: List chart of accounts
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum: *a9
+          required: false
+          name: type
+          in: query
+        - schema:
+            type: string
+            maxLength: 60
+          required: false
+          name: q
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerAccountPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createAccount
+      summary: Create a ledger account (code unique per org, 4 digits)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLedgerAccount"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerAccount"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /accounts/{id}:
+    patch:
+      operationId: updateAccount
+      summary: "Update an account (system accounts: name only)"
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLedgerAccount"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerAccount"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /accounts/seed-default:
+    post:
+      operationId: seedDefaultAccounts
+      summary: Idempotently seed the default chart of accounts for this org
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedDefaultAccountsResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /journal-entries:
+    get:
+      operationId: listJournalEntries
+      summary: List journal entries (posted and pending)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum: *a10
+          required: false
+          name: sourceType
+          in: query
+        - schema:
+            type: string
+            enum:
+              - posted
+              - pending
+          required: false
+          name: status
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: from
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntryPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createJournalEntry
+      summary: Post a manual entry; adjustments are created pending for a second approver
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:post
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJournalEntry"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /journal-entries/{id}:
+    get:
+      operationId: getJournalEntry
+      summary: Get a journal entry with its lines
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /journal-entries/{id}/approve:
+    post:
+      operationId: approveJournalEntry
+      summary: Approve and post a pending adjustment (approver must differ from requester)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:approve_adjustment
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /journal-entries/{id}/reverse:
+    post:
+      operationId: reverseJournalEntry
+      summary: Reverse a posted entry with a mirrored entry
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:post
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReverseJournalEntry"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ledger/trial-balance:
+    get:
+      operationId: getTrialBalance
+      summary: Trial balance per account over posted entries
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrialBalance"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ledger/proof:
+    get:
+      operationId: getLedgerProof
+      summary: "Double-entry proof: total debits equal total credits and no entry is unbalanced"
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerProof"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /ledger/accounts/{id}/entries:
+    get:
+      operationId: listAccountEntries
+      summary: Ledger lines for one account (posted only)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+          required: false
+          name: from
+          in: query
+        - schema:
+            type: string
+          required: false
+          name: to
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerAccountEntryPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices:
+    get:
+      operationId: listInvoices
+      summary: List invoices (tenants/landlords see only their leases/properties)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum: *a11
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: leaseId
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: tenantProfileId
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: dueBefore
+          in: query
+        - schema:
+            anyOf:
+              - type: string
+                format: date-time
+              - type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+          required: false
+          name: dueAfter
+          in: query
+        - schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+          required: false
+          name: overdue
+          in: query
+        - schema:
+            type: string
+            maxLength: 60
+          required: false
+          name: q
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoicePage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createInvoice
+      summary: Create a manual draft invoice for a lease
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoice"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices/aging:
+    get:
+      operationId: getInvoiceAging
+      summary: AR aging buckets by tenant
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceAging"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices/generate:
+    post:
+      operationId: generateInvoices
+      summary: Generate and issue rent invoices for a period from active leases (idempotent per lease+period)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateInvoices"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateInvoicesResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices/mark-overdue:
+    post:
+      operationId: markInvoicesOverdue
+      summary: Scan open invoices past due and mark them overdue
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarkOverdueResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices/{id}:
+    get:
+      operationId: getInvoice
+      summary: Invoice with lines, payments, lease and tenant context
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices/{id}/issue:
+    post:
+      operationId: issueInvoice
+      summary: Issue a draft invoice (posts AR / income)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /invoices/{id}/void:
+    post:
+      operationId: voidInvoice
+      summary: Void an unpaid invoice (reverses the issue entry)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:write
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoidInvoice"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /payments:
+    get:
+      operationId: listPayments
+      summary: List payments (scoped like invoices)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: payment:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type: string
+            enum: *a13
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: false
+          name: invoiceId
+          in: query
+        - schema:
+            type: string
+            enum: *a12
+          required: false
+          name: method
+          in: query
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentPage"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+    post:
+      operationId: createPayment
+      summary: Collect a payment on an invoice through the payment adapter (Idempotency-Key required)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: payment:read
+      x-bolar-idempotent: true
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            description: Required. Same key + same payload replays the original response.
+          required: true
+          name: Idempotency-Key
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePayment"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /payments/{id}:
+    get:
+      operationId: getPayment
+      summary: Payment with provider events (bank data only with bank:read)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: payment:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /payments/{id}/refund:
+    post:
+      operationId: refundPayment
+      summary: Refund a succeeded payment (approval-gated; approver differs from recorder)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: finance:approve_adjustment
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          required: true
+          name: id
+          in: path
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundPayment"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /bank-links/link-token:
+    post:
+      operationId: createBankLinkToken
+      summary: Create a bank-link token through the bank adapter
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: bank:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankLinkTokenRequest"
+      responses:
+        "201":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankLinkToken"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /bank-links/exchange:
+    post:
+      operationId: exchangeBankLink
+      summary: Exchange a public token; returns an opaque reference and mask only (no token persisted in MVP)
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: mfa
+      x-bolar-permission: bank:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankLinkExchangeRequest"
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankLinkExchangeResult"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "409":
+          description: Conflict or idempotency issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /finance/summary:
+    get:
+      operationId: getFinanceSummary
+      summary: "Bookkeeper dashboard KPIs: open AR, overdue, collected this month, exceptions, trial balance status"
+      tags:
+        - finance
+      security:
+        - bearerAuth: []
+      x-bolar-auth: session
+      x-bolar-permission: finance:read
+      x-bolar-idempotent: false
+      parameters:
+        - schema:
+            type: string
+            description: Target org slug/id; platform actors only. Defaults to the token org.
+          required: false
+          name: X-Tenant-Org
+          in: header
+        - schema:
+            type: string
+            description: Declared purpose for sensitive data access.
+          required: false
+          name: X-Access-Purpose
+          in: header
+      responses:
+        "200":
+          description: Success response (X-Request-Id header set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceSummary"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          description: Denied or review required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "404":
+          description: Not found (also returned for denied restricted resources)
           content:
             application/json:
               schema:
