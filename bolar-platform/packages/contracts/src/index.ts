@@ -23,3 +23,5 @@ export * from './legal.js';
 export * from './packet-export.js';
 export * from './signature.js';
 export * from './platform.js';
+export * from './ai.js';
+export * from './reporting.js';

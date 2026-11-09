@@ -26,6 +26,8 @@ import { packetExportRouter } from './packet-export/routes.js';
 import { signatureRouter } from './signature/routes.js';
 import { integrationsRouter } from './integrations/routes.js';
 import { storageRouter } from './storage/routes.js';
+import { aiRouter } from './ai/routes.js';
+import { reportingRouter } from './reporting/routes.js';
 import { platformRouter } from './platform/routes.js';
 
 /**
@@ -61,6 +63,8 @@ export const modules: { name: string; router: Router }[] = [
   { name: 'signature', router: signatureRouter },
   { name: 'integrations', router: integrationsRouter },
   { name: 'storage', router: storageRouter },
+  { name: 'ai', router: aiRouter },
+  { name: 'reporting', router: reportingRouter },
   { name: 'platform', router: platformRouter },
 ];
 
