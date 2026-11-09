@@ -88,4 +88,4 @@ Claude-Session: https://claude.ai/code/session_0193TZUPTz1oUhEg7xw7e7by
    shared files touched (if any) and why; risks/blockers; what the integrator must wire (seed function name, reaction file).
 
 Prefer a complete vertical slice over breadth. If a blueprint item cannot be finished, implement the contract and a
-clear `501`-free TODO-free fallback (e.g. a documented "not available in MVP" state) and say so in the report.
+clear fallback without placeholder markers (e.g. a documented "not available in MVP" state) and say so in the report.
