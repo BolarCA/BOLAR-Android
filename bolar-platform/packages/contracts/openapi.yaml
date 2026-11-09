@@ -2248,6 +2248,20 @@ components:
             - ignored
       required:
         - outcome
+    LedgerAccountPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerAccount"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     LedgerAccount:
       type: object
       properties:
@@ -2261,7 +2275,7 @@ components:
           type: string
         type:
           type: string
-          enum: &a9
+          enum:
             - asset
             - liability
             - equity
@@ -2292,20 +2306,6 @@ components:
         - propertyId
         - parentId
         - createdAt
-    LedgerAccountPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/LedgerAccount"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
     CreateLedgerAccount:
       type: object
       properties:
@@ -2318,7 +2318,12 @@ components:
           maxLength: 120
         type:
           type: string
-          enum: *a9
+          enum:
+            - asset
+            - liability
+            - equity
+            - income
+            - expense
         propertyId:
           type: string
           minLength: 1
@@ -2340,7 +2345,12 @@ components:
           maxLength: 120
         type:
           type: string
-          enum: *a9
+          enum:
+            - asset
+            - liability
+            - equity
+            - income
+            - expense
         propertyId:
           type:
             - string
@@ -2368,49 +2378,20 @@ components:
         - created
         - existing
         - accounts
-    LedgerLine:
+    JournalEntryPage:
       type: object
       properties:
-        id:
-          type: string
-          minLength: 1
-          maxLength: 64
-        journalEntryId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        accountId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        accountCode:
-          type: string
-        accountName:
-          type: string
-        propertyId:
-          type:
-            - string
-            - "null"
-          minLength: 1
-          maxLength: 64
-        debitCents:
-          type: integer
-        creditCents:
-          type: integer
-        memo:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JournalEntry"
+        nextCursor:
           type:
             - string
             - "null"
       required:
-        - id
-        - journalEntryId
-        - accountId
-        - accountCode
-        - accountName
-        - propertyId
-        - debitCents
-        - creditCents
-        - memo
+        - items
+        - nextCursor
     JournalEntry:
       type: object
       properties:
@@ -2420,7 +2401,7 @@ components:
           maxLength: 64
         sourceType:
           type: string
-          enum: &a10
+          enum:
             - invoice
             - payment
             - adjustment
@@ -2481,45 +2462,49 @@ components:
         - totalDebitCents
         - totalCreditCents
         - lines
-    JournalEntryPage:
+    LedgerLine:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/JournalEntry"
-        nextCursor:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        journalEntryId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        accountId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        accountCode:
+          type: string
+        accountName:
+          type: string
+        propertyId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
+        debitCents:
+          type: integer
+        creditCents:
+          type: integer
+        memo:
           type:
             - string
             - "null"
       required:
-        - items
-        - nextCursor
-    JournalLineInput:
-      type: object
-      properties:
-        accountCode:
-          type: string
-          pattern: ^\d{4}$
-        debitCents:
-          type: integer
-          minimum: 0
-          maximum: 100000000000
-          default: 0
-        creditCents:
-          type: integer
-          minimum: 0
-          maximum: 100000000000
-          default: 0
-        propertyId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        memo:
-          type: string
-          maxLength: 240
-      required:
+        - id
+        - journalEntryId
+        - accountId
         - accountCode
+        - accountName
+        - propertyId
+        - debitCents
+        - creditCents
+        - memo
     CreateJournalEntry:
       type: object
       properties:
@@ -2551,6 +2536,31 @@ components:
       required:
         - memo
         - lines
+    JournalLineInput:
+      type: object
+      properties:
+        accountCode:
+          type: string
+          pattern: ^\d{4}$
+        debitCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+          default: 0
+        creditCents:
+          type: integer
+          minimum: 0
+          maximum: 100000000000
+          default: 0
+        propertyId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        memo:
+          type: string
+          maxLength: 240
+      required:
+        - accountCode
     ReverseJournalEntry:
       type: object
       properties:
@@ -2560,34 +2570,6 @@ components:
           maxLength: 500
       required:
         - reason
-    TrialBalanceRow:
-      type: object
-      properties:
-        accountId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        code:
-          type: string
-        name:
-          type: string
-        type:
-          type: string
-          enum: *a9
-        debitCents:
-          type: integer
-        creditCents:
-          type: integer
-        balanceCents:
-          type: integer
-      required:
-        - accountId
-        - code
-        - name
-        - type
-        - debitCents
-        - creditCents
-        - balanceCents
     TrialBalance:
       type: object
       properties:
@@ -2609,6 +2591,39 @@ components:
         - totalCreditCents
         - balanced
         - asOf
+    TrialBalanceRow:
+      type: object
+      properties:
+        accountId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - asset
+            - liability
+            - equity
+            - income
+            - expense
+        debitCents:
+          type: integer
+        creditCents:
+          type: integer
+        balanceCents:
+          type: integer
+      required:
+        - accountId
+        - code
+        - name
+        - type
+        - debitCents
+        - creditCents
+        - balanceCents
     LedgerProof:
       type: object
       properties:
@@ -2634,6 +2649,20 @@ components:
         - unbalancedEntries
         - pendingEntries
         - checkedAt
+    LedgerAccountEntryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerAccountEntry"
+        nextCursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - nextCursor
     LedgerAccountEntry:
       allOf:
         - $ref: "#/components/schemas/LedgerLine"
@@ -2645,7 +2674,12 @@ components:
                 - "null"
             sourceType:
               type: string
-              enum: *a10
+              enum:
+                - invoice
+                - payment
+                - adjustment
+                - reversal
+                - opening_balance
             sourceId:
               type: string
             journalMemo:
@@ -2659,13 +2693,13 @@ components:
             - sourceType
             - sourceId
             - journalMemo
-    LedgerAccountEntryPage:
+    InvoicePage:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/LedgerAccountEntry"
+            $ref: "#/components/schemas/Invoice"
         nextCursor:
           type:
             - string
@@ -2694,7 +2728,7 @@ components:
           type: string
         status:
           type: string
-          enum: &a11
+          enum:
             - draft
             - open
             - partially_paid
@@ -2760,42 +2794,6 @@ components:
         - tenantName
         - propertyName
         - unitNumber
-    InvoicePage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Invoice"
-        nextCursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - nextCursor
-    AgingBuckets:
-      type: object
-      properties:
-        currentCents:
-          type: integer
-        d1to30Cents:
-          type: integer
-        d31to60Cents:
-          type: integer
-        d61to90Cents:
-          type: integer
-        d90PlusCents:
-          type: integer
-        totalCents:
-          type: integer
-      required:
-        - currentCents
-        - d1to30Cents
-        - d31to60Cents
-        - d61to90Cents
-        - d90PlusCents
-        - totalCents
     InvoiceAging:
       type: object
       properties:
@@ -2828,6 +2826,28 @@ components:
         - asOf
         - totals
         - byTenant
+    AgingBuckets:
+      type: object
+      properties:
+        currentCents:
+          type: integer
+        d1to30Cents:
+          type: integer
+        d31to60Cents:
+          type: integer
+        d61to90Cents:
+          type: integer
+        d90PlusCents:
+          type: integer
+        totalCents:
+          type: integer
+      required:
+        - currentCents
+        - d1to30Cents
+        - d31to60Cents
+        - d61to90Cents
+        - d90PlusCents
+        - totalCents
     GenerateInvoicesResponse:
       type: object
       properties:
@@ -2867,96 +2887,6 @@ components:
       required:
         - updated
         - asOf
-    InvoiceLine:
-      type: object
-      properties:
-        id:
-          type: string
-          minLength: 1
-          maxLength: 64
-        description:
-          type: string
-        accountCode:
-          type: string
-        amountCents:
-          type: integer
-        chargeId:
-          type:
-            - string
-            - "null"
-          minLength: 1
-          maxLength: 64
-      required:
-        - id
-        - description
-        - accountCode
-        - amountCents
-        - chargeId
-    Payment:
-      type: object
-      properties:
-        id:
-          type: string
-          minLength: 1
-          maxLength: 64
-        invoiceId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        invoiceNumber:
-          type:
-            - string
-            - "null"
-        provider:
-          type: string
-        method:
-          type: string
-          enum: &a12
-            - ach
-            - card
-            - check
-            - cash
-            - other
-        status:
-          type: string
-          enum: &a13
-            - pending
-            - succeeded
-            - failed
-            - refunded
-            - disputed
-            - canceled
-        amountCents:
-          type: integer
-        externalId:
-          type:
-            - string
-            - "null"
-        failureReason:
-          type:
-            - string
-            - "null"
-        receivedAt:
-          type:
-            - string
-            - "null"
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      required:
-        - id
-        - invoiceId
-        - invoiceNumber
-        - provider
-        - method
-        - status
-        - amountCents
-        - externalId
-        - failureReason
-        - receivedAt
-        - createdAt
-        - updatedAt
     InvoiceDetail:
       allOf:
         - $ref: "#/components/schemas/Invoice"
@@ -3036,24 +2966,96 @@ components:
             - lease
             - tenant
             - journalEntryIds
-    CreateInvoiceLine:
+    InvoiceLine:
       type: object
       properties:
-        description:
+        id:
           type: string
           minLength: 1
-          maxLength: 240
+          maxLength: 64
+        description:
+          type: string
         accountCode:
           type: string
-          pattern: ^\d{4}$
-          default: "4000"
         amountCents:
           type: integer
-          minimum: 1
-          maximum: 100000000000
+        chargeId:
+          type:
+            - string
+            - "null"
+          minLength: 1
+          maxLength: 64
       required:
+        - id
         - description
+        - accountCode
         - amountCents
+        - chargeId
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        invoiceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        invoiceNumber:
+          type:
+            - string
+            - "null"
+        provider:
+          type: string
+        method:
+          type: string
+          enum:
+            - ach
+            - card
+            - check
+            - cash
+            - other
+        status:
+          type: string
+          enum:
+            - pending
+            - succeeded
+            - failed
+            - refunded
+            - disputed
+            - canceled
+        amountCents:
+          type: integer
+        externalId:
+          type:
+            - string
+            - "null"
+        failureReason:
+          type:
+            - string
+            - "null"
+        receivedAt:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - invoiceId
+        - invoiceNumber
+        - provider
+        - method
+        - status
+        - amountCents
+        - externalId
+        - failureReason
+        - receivedAt
+        - createdAt
+        - updatedAt
     CreateInvoice:
       type: object
       properties:
@@ -3089,6 +3091,24 @@ components:
         - leaseId
         - dueDate
         - lines
+    CreateInvoiceLine:
+      type: object
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 240
+        accountCode:
+          type: string
+          pattern: ^\d{4}$
+          default: "4000"
+        amountCents:
+          type: integer
+          minimum: 1
+          maximum: 100000000000
+      required:
+        - description
+        - amountCents
     VoidInvoice:
       type: object
       properties:
@@ -3112,6 +3132,46 @@ components:
       required:
         - items
         - nextCursor
+    PaymentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Payment"
+        - type: object
+          properties:
+            events:
+              type: array
+              items:
+                $ref: "#/components/schemas/PaymentEvent"
+            invoice:
+              type: object
+              properties:
+                id:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                number:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - open
+                    - partially_paid
+                    - paid
+                    - void
+                    - overdue
+                totalCents:
+                  type: integer
+                paidCents:
+                  type: integer
+              required:
+                - id
+                - number
+                - status
+                - totalCents
+                - paidCents
+          required:
+            - events
+            - invoice
     PaymentEvent:
       type: object
       properties:
@@ -3136,40 +3196,6 @@ components:
         - externalEventId
         - processedAt
         - createdAt
-    PaymentDetail:
-      allOf:
-        - $ref: "#/components/schemas/Payment"
-        - type: object
-          properties:
-            events:
-              type: array
-              items:
-                $ref: "#/components/schemas/PaymentEvent"
-            invoice:
-              type: object
-              properties:
-                id:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-                number:
-                  type: string
-                status:
-                  type: string
-                  enum: *a11
-                totalCents:
-                  type: integer
-                paidCents:
-                  type: integer
-              required:
-                - id
-                - number
-                - status
-                - totalCents
-                - paidCents
-          required:
-            - events
-            - invoice
     CreatePayment:
       type: object
       properties:
@@ -3183,7 +3209,12 @@ components:
           maximum: 100000000000
         method:
           type: string
-          enum: *a12
+          enum:
+            - ach
+            - card
+            - check
+            - cash
+            - other
           default: card
         paymentMethodRef:
           type: string
@@ -7440,7 +7471,12 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a9
+            enum:
+              - asset
+              - liability
+              - equity
+              - income
+              - expense
           required: false
           name: type
           in: query
@@ -7454,12 +7490,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -7514,12 +7552,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -7587,12 +7627,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -7653,12 +7695,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -7726,7 +7770,12 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a10
+            enum:
+              - invoice
+              - payment
+              - adjustment
+              - reversal
+              - opening_balance
           required: false
           name: sourceType
           in: query
@@ -7760,12 +7809,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -7820,12 +7871,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -7893,12 +7946,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -7961,12 +8016,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8029,12 +8086,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -8095,12 +8154,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8156,12 +8217,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8248,12 +8311,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8321,7 +8386,13 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a11
+            enum:
+              - draft
+              - open
+              - partially_paid
+              - paid
+              - void
+              - overdue
           required: false
           name: status
           in: query
@@ -8375,12 +8446,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8435,12 +8508,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -8501,12 +8576,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8562,12 +8639,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -8628,12 +8707,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8696,12 +8777,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8764,12 +8847,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8832,12 +8917,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -8910,7 +8997,13 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a13
+            enum:
+              - pending
+              - succeeded
+              - failed
+              - refunded
+              - disputed
+              - canceled
           required: false
           name: status
           in: query
@@ -8923,7 +9016,12 @@ paths:
           in: query
         - schema:
             type: string
-            enum: *a12
+            enum:
+              - ach
+              - card
+              - check
+              - cash
+              - other
           required: false
           name: method
           in: query
@@ -8931,12 +9029,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -8991,6 +9091,7 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
@@ -8999,12 +9100,14 @@ paths:
             maxLength: 128
             description: Required. Same key + same payload replays the original response.
           required: true
+          description: Required. Same key + same payload replays the original response.
           name: Idempotency-Key
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -9072,12 +9175,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
@@ -9140,12 +9245,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -9206,12 +9313,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -9272,12 +9381,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       requestBody:
@@ -9338,12 +9449,14 @@ paths:
             type: string
             description: Target org slug/id; platform actors only. Defaults to the token org.
           required: false
+          description: Target org slug/id; platform actors only. Defaults to the token org.
           name: X-Tenant-Org
           in: header
         - schema:
             type: string
             description: Declared purpose for sensitive data access.
           required: false
+          description: Declared purpose for sensitive data access.
           name: X-Access-Purpose
           in: header
       responses:
