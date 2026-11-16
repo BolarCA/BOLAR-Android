@@ -9,7 +9,17 @@ code, then the complete verification pipeline run locally. Findings are ranked b
 `480f2fc`. Pass-2 medium and low items remain open and are listed at the end for triage. The "Fix log" section below
 maps every finding to its change.
 
-## Test run (all green)
+## Test run after the fixes (all green, 2026-11-16, head `060125a`)
+
+| Step | Result |
+| --- | --- |
+| `pnpm env:check`, `pnpm lint`, `pnpm prisma:validate`, `pnpm typecheck`, `pnpm docs:lint`, `pnpm openapi:check` | PASS |
+| `pnpm db:migrate`, `pnpm db:migrate:test` | PASS (10 migrations) |
+| `pnpm test` | PASS: shared 1 file, integrations 2, db 2, workers 2, api 38 (45 files) |
+| `pnpm build` | PASS |
+| `pnpm e2e` with `--retries 0`, production build | PASS: 101 passed, 1 skipped (mobile-only), 0 flaky, 3.2 min |
+
+## Test run before the fixes (all green)
 
 | Step | Command | Result |
 | --- | --- | --- |
