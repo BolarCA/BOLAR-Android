@@ -2,7 +2,12 @@
 
 Date: 2026-11-16. Scope: the full platform diff against `master` (608 files, 85,304 additions). Method: file-by-file read
 of the kernel, auth, tenancy, access control, audit, finance, lease, IAM, webhooks, storage, AI, reporting and web client
-code, then the complete verification pipeline run locally. Findings are ranked by severity; nothing has been changed yet.
+code, then the complete verification pipeline run locally. Findings are ranked by severity.
+
+**Status (same day):** all 26 pass-1 findings are fixed on the branch in six commits (`c44f6ab`, `2c24fa2`,
+`84ab633`, `dc3cd1a`, `964d028`, `480f2fc`), each with tests; the seven verified high findings of pass 2 are fixed in
+`480f2fc`. Pass-2 medium and low items remain open and are listed at the end for triage. The "Fix log" section below
+maps every finding to its change.
 
 ## Test run (all green)
 
@@ -49,6 +54,37 @@ code, then the complete verification pipeline run locally. Findings are ranked b
 | 24 | Low | `apps/web/lib/api-client.ts:29` | Refresh token in `localStorage`; prefer an httpOnly cookie. |
 | 25 | Low (reuse) | `packages/shared/src/events.ts:35` | Event bus logs handler failures with `console.error`, bypassing pino and error reporting. |
 | 26 | Low (simplify) | `packages/db/src/tenant-client.ts:88` | Model delegate lookup written three times; one helper. |
+
+## Fix log (pass 1)
+
+| # | Fix | Where |
+| --- | --- | --- |
+| 1 | `/auth/mfa/setup` refuses re-enrollment unless the session has passed MFA (audited `auth.mfa_setup_denied`) | `auth/service.ts` mfaSetup |
+| 2 | wrong TOTP codes count against the account lockout; locked accounts answer the same generic message; per-IP `mfa_ip` rate policy | `auth/service.ts` mfaVerify, `shared/rate-limit.ts` |
+| 3 | attempts while locked no longer bump the counter or extend the lock | `auth/service.ts` recordFailedAttempt |
+| 4 | memory driver delivers to an in-process consumer or keeps a bounded buffer with a warning; `pnpm --filter @bolar/workers dev:inproc` runs API + handlers in one process | `shared/queue.ts`, `workers/src/inproc.ts`, README |
+| 5 | webhook store answers new / duplicate / retry; a delivery whose handler failed is re-run on the provider's retry | `integrations/src/webhooks/index.ts`, `api/.../integrations/webhooks.ts` |
+| 6 | idempotency row is claimed before the handler (409 `idempotency_in_progress` for a concurrent duplicate, claim released on failure); key scoped to the acting user | `shared/route.ts` claimIdempotencyKey |
+| 7 | payment success/failure claim the pending row with a conditional update inside one transaction with the invoice allocation | `finance/payment/service.ts` |
+| 8 | invitation accept refuses (409, audited) when an active account exists or the org is inactive | `iam/routes.ts` |
+| 9 | refresh checks org status and lock; presenting a replaced token revokes the session (`auth.refresh_reuse_detected`, new `Session.prevRefreshTokenHash`) | `auth/service.ts`, migration `20261116120000` |
+| 10 | `forTenant(..., { tx })` routes statements and the RLS `SET LOCAL` through the caller's transaction; `tenantDb(ctx, tx)` | `db/src/tenant-client.ts`, `shared/db.ts` |
+| 11 | `updateManyAndReturn` scoped; unlisted operations throw instead of running unscoped | `db/src/tenant-client.ts` |
+| 12 | approve/activate lock the unit row (`FOR UPDATE`) and re-check overlaps inside the transaction that writes the status | `lease/service.ts` |
+| 13 | constant-time TOTP compare; a code is accepted once (`UserProfile.mfaLastUsedStep`) | `shared/totp.ts`, `auth/service.ts` |
+| 14 | multi-org e-mail resolved by password match before any orgSlug prompt | `auth/service.ts` login |
+| 15 | unknown-user path verifies a dummy hash (constant response time) | `auth/service.ts` login |
+| 16 | mock Stripe ids are random; webhook lookup matches provider and id | `integrations/src/payments/index.ts`, `finance/payment/service.ts` |
+| 17 | `/storage/object` bodies are never parsed as JSON | `api/src/app.ts` |
+| 18 | non-JSON error bodies become `ApiError` | `apps/web/lib/api-client.ts` |
+| 19 | module intake limiter removed; shared `public_ip` policy applies | `privacy/service.ts`, `privacy/routes.ts` |
+| 20 | `applyRefundBookkeeping` shared by staff and provider-initiated refunds | `finance/payment/service.ts` |
+| 21 | cross-tenant access audited once per agent/org/session per minute | `shared/context.ts` |
+| 22 | seeds refuse `NODE_ENV=production` unless `SEED_ALLOW_PRODUCTION=1` | `db/seed/index.ts`, `db/seed/demo-data.ts` |
+| 23 | CSP, `frame-ancestors 'none'`, nosniff, referrer and permissions policies, HSTS in production | `apps/web/next.config.ts` |
+| 24 | refresh token is an httpOnly cookie for the web client (`X-Auth-Transport: cookie`); body token kept for API clients; nothing secret in localStorage | `shared/cookies.ts`, `auth/routes.ts`, `contracts/src/auth.ts`, `apps/web/lib/api-client.ts` |
+| 25 | event bus reports handler failures through pino with event, tenant and request id | `shared/src/events.ts`, `api/src/shared/events.ts` |
+| 26 | `delegateFor` helper replaces the three delegate casts | `db/src/tenant-client.ts` |
 
 ## File-by-file notes
 

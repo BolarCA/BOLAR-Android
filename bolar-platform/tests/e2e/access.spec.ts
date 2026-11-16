@@ -17,6 +17,8 @@ test.describe('authentication and portal gating @smoke', () => {
 
   test('tenant cannot enter the manager portal (denied state, no data fetched)', async ({ page }) => {
     await login(page, DEMO.tenant, /\/tenant/);
+    // let the tenant home finish its own data requests before watching for the manager portal's
+    await page.waitForLoadState('networkidle');
     const requests: string[] = [];
     page.on('request', (r) => { if (r.url().includes(':4000/') && !r.url().includes('/me')) requests.push(r.url()); });
     await page.goto('/manager');
@@ -102,18 +104,22 @@ test.describe('login-time MFA step-up @smoke', () => {
     await page.getByLabel('Password').fill('LongEnoughPassword1!');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByLabel('Verification code')).toBeVisible();
-    await page.getByLabel('Verification code').fill(totp(secret));
+    // the enrollment code above was consumed (replay guard): verify the login with the next time step's code
+    await page.getByLabel('Verification code').fill(totp(secret, 30_000));
     await page.getByRole('button', { name: 'Verify and continue' }).click();
     await expect(page).toHaveURL(/\/finance/, { timeout: 20_000 });
   });
 });
 
-/** RFC 6238 TOTP (SHA-1, 30 s, 6 digits) mirroring packages/api/src/shared/totp.ts. */
-function totp(secretB32: string): string {
+/**
+ * RFC 6238 TOTP (SHA-1, 30 s, 6 digits) mirroring packages/api/src/shared/totp.ts. `offsetMs` selects a neighbouring
+ * time step: the API accepts each code once, so a second verification in the same run must use the next step's code.
+ */
+function totp(secretB32: string, offsetMs = 0): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let bits = 0, value = 0; const bytes: number[] = [];
   for (const c of secretB32.toUpperCase()) { const i = alphabet.indexOf(c); if (i < 0) continue; value = (value << 5) | i; bits += 5; if (bits >= 8) { bytes.push((value >>> (bits - 8)) & 255); bits -= 8; } }
-  const counter = Math.floor(Date.now() / 30_000);
+  const counter = Math.floor((Date.now() + offsetMs) / 30_000);
   const msg = Buffer.alloc(8); msg.writeBigUInt64BE(BigInt(counter));
   const h = createHmac('sha1', Buffer.from(bytes)).update(msg).digest();
   const o = h[h.length - 1]! & 0xf;
