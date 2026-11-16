@@ -1,0 +1,28 @@
+{
+  "name": "denied-tenant-not-party",
+  "category": "denied",
+  "actor": "outsiderA",
+  "command": "Summarize this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_lease"
+    ],
+    "statuses": [
+      "denied"
+    ],
+    "citesSources": false,
+    "contains": [
+      "can't access"
+    ],
+    "notContains": [
+      "$1500.00",
+      "Theo Test"
+    ],
+    "auditAction": "ai.tool_denied"
+  }
+}

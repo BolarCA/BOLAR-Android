@@ -1,0 +1,20 @@
+{
+  "name": "budget-restored",
+  "category": "budget",
+  "actor": "managerA",
+  "command": "Summarize this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "setup": "restore_budget",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_lease"
+    ],
+    "statuses": [
+      "ok"
+    ]
+  }
+}

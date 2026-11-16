@@ -1,0 +1,25 @@
+{
+  "name": "summary-case-privileged-denied",
+  "category": "denied",
+  "actor": "managerA",
+  "command": "Summarize case {{caseA}}",
+  "notes": "Manager holds case:read but the case is privileged; same loadCase check as GET /cases/:id -> 404 -> denied.",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_case"
+    ],
+    "statuses": [
+      "denied"
+    ],
+    "citesSources": false,
+    "contains": [
+      "can't access"
+    ],
+    "notContains": [
+      "Privileged eviction matter",
+      "Hearing"
+    ],
+    "auditAction": "ai.tool_denied"
+  }
+}

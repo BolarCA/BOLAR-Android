@@ -1,0 +1,32 @@
+# Staging stack (blueprint Day 60). Images are built by .github/workflows/deploy-staging.yml and pulled by tag.
+# Secrets come from the host environment / secret manager, never from this file.
+services:
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/bolar-api:${IMAGE_TAG}
+    env_file: [/etc/bolar/staging.env]
+    environment: { NODE_ENV: production, QUEUE_DRIVER: redis, API_PORT: "4000" }
+    ports: ["4000:4000"]
+    depends_on: [redis]
+    restart: unless-stopped
+  workers:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/bolar-workers:${IMAGE_TAG}
+    env_file: [/etc/bolar/staging.env]
+    environment: { NODE_ENV: production }
+    depends_on: [redis]
+    restart: unless-stopped
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/bolar-web:${IMAGE_TAG}
+    ports: ["3000:3000"]
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis-data:/data]
+    restart: unless-stopped
+  migrate:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/bolar-api:${IMAGE_TAG}
+    env_file: [/etc/bolar/staging.env]
+    command: ["sh", "-c", "cd packages/db && npx prisma migrate deploy"]
+    profiles: [migrate]
+volumes:
+  redis-data: {}

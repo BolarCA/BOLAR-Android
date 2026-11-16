@@ -1,0 +1,33 @@
+{
+  "name": "pii-command-redacted",
+  "category": "pii",
+  "actor": "managerA",
+  "command": "Summarize this lease. Tenant SSN 123-45-6789, email theo.secret@alpha.test, phone 512-555-0199",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_lease"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "providerNeverReceives": [
+      "123-45-6789",
+      "theo.secret@alpha.test",
+      "5550199"
+    ],
+    "storedUserMessageContains": [
+      "[ssn]",
+      "[email]",
+      "[phone]"
+    ],
+    "storedUserMessageNotContains": [
+      "123-45-6789",
+      "theo.secret"
+    ]
+  }
+}

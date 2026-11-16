@@ -1,0 +1,16 @@
+{
+  "name": "budget-exhausted",
+  "category": "budget",
+  "actor": "managerA",
+  "command": "Summarize this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "setup": "exhaust_budget",
+  "expect": {
+    "httpStatus": 429,
+    "errorCode": "rate_limited",
+    "auditAction": "ai.budget_exceeded"
+  }
+}

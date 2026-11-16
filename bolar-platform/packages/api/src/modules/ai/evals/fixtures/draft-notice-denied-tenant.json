@@ -1,0 +1,24 @@
+{
+  "name": "draft-notice-denied-tenant",
+  "category": "denied",
+  "actor": "tenantA",
+  "command": "Draft a late rent notice for this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "notes": "Tenant lacks notice:draft; the tool is recorded as denied and no Notice row is written.",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "draft_notice"
+    ],
+    "statuses": [
+      "denied"
+    ],
+    "noticeDraftCreated": false,
+    "contains": [
+      "can't access"
+    ]
+  }
+}

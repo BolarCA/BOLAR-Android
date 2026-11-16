@@ -1,0 +1,24 @@
+{
+  "name": "packet-outline-lawyer",
+  "category": "packet",
+  "actor": "lawyerA",
+  "command": "Prepare the evidence packet for this case",
+  "context": {
+    "resourceType": "case",
+    "ref": "caseA"
+  },
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "prepare_packet_outline"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "Audit manifest",
+      "packet-export"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "due-items",
+  "category": "due",
+  "actor": "managerA",
+  "command": "What is overdue or due this week?",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "list_due_items"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "Leaking kitchen tap",
+      "work_order:{{workOrderA}}"
+    ]
+  }
+}

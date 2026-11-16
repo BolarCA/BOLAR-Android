@@ -1,0 +1,19 @@
+{
+  "$comment": "Day 12 RBAC seed. Roles and scope types mirror packages/shared/src/rbac.ts; permissions are derived from ROLE_PERMISSIONS at seed time and validated by the rbac seed test.",
+  "roles": [
+    { "role": "platform_admin", "scopes": ["platform"], "description": "Platform control plane: orgs, flags, global audit, support sessions." },
+    { "role": "org_admin", "scopes": ["org"], "description": "Tenant org administrator." },
+    { "role": "subaccount_admin", "scopes": ["subaccount"], "description": "Subaccount administrator (staff, roles, properties, reports)." },
+    { "role": "landlord", "scopes": ["org", "subaccount", "property"], "description": "Owner: portfolio, approvals, income." },
+    { "role": "property_manager", "scopes": ["org", "subaccount", "property"], "description": "Daily operations." },
+    { "role": "tenant", "scopes": ["org"], "description": "Resident portal." },
+    { "role": "corp_admin", "scopes": ["org", "subaccount"], "description": "Corporate tenant admin." },
+    { "role": "occupant", "scopes": ["org"], "description": "Corporate occupant." },
+    { "role": "bookkeeper", "scopes": ["org", "subaccount"], "description": "Finance portal." },
+    { "role": "lawyer", "scopes": ["org", "case"], "description": "Legal portal; privileged." },
+    { "role": "vendor", "scopes": ["org"], "description": "Assigned jobs only." },
+    { "role": "government", "scopes": ["org"], "description": "Restricted agency portal." },
+    { "role": "compliance_officer", "scopes": ["org", "subaccount"], "description": "Compliance queue and rules." },
+    { "role": "support_agent", "scopes": ["platform"], "description": "Read-only with time-boxed support sessions." }
+  ]
+}

@@ -1,0 +1,32 @@
+# OpenTelemetry collector for local tracing (docker compose --profile observability).
+# The API exports OTLP/HTTP traces to :4318 when OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+processors:
+  batch:
+    timeout: 2s
+  # Never forward request bodies or auth headers; the http instrumentation does not record them, this is belt and braces.
+  attributes/redact:
+    actions:
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.header.cookie
+        action: delete
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  debug:
+    verbosity: basic
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes/redact, batch]
+      exporters: [otlp/jaeger, debug]

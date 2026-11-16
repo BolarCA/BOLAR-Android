@@ -1,0 +1,25 @@
+{
+  "name": "anomaly-flags",
+  "category": "anomaly",
+  "actor": "managerA",
+  "command": "Flag anomalies and risks in my portfolio",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "flag_anomalies"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "Lapsed Cover Electric",
+      "INV-A-0001",
+      "vendor:{{expiredVendorA}}",
+      "lease:{{leaseA}}"
+    ],
+    "notContains": [
+      "909"
+    ]
+  }
+}

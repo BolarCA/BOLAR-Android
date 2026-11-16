@@ -1,0 +1,15 @@
+{
+  "name": "clarify-no-tool",
+  "category": "summary",
+  "actor": "managerA",
+  "command": "hello there",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [],
+    "statuses": [],
+    "citesSources": false,
+    "contains": [
+      "Tell me which record you mean"
+    ]
+  }
+}

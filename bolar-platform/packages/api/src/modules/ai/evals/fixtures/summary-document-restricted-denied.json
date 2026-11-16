@@ -1,0 +1,27 @@
+{
+  "name": "summary-document-restricted-denied",
+  "category": "denied",
+  "actor": "managerA",
+  "command": "Summarize this document",
+  "context": {
+    "resourceType": "document",
+    "ref": "restrictedDocA"
+  },
+  "notes": "Restricted classification without clearance -> review_required -> denied; title never surfaces.",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_document"
+    ],
+    "statuses": [
+      "denied"
+    ],
+    "contains": [
+      "classified"
+    ],
+    "notContains": [
+      "Screening report"
+    ],
+    "auditAction": "ai.tool_denied"
+  }
+}

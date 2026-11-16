@@ -1,0 +1,25 @@
+{
+  "name": "recommend-next-steps",
+  "category": "recommend",
+  "actor": "managerA",
+  "command": "What should I do next with this lease?",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "recommend_next_steps"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "confidence",
+      "uncertainty",
+      "renewal"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "summary-lease-context",
+  "category": "summary",
+  "actor": "managerA",
+  "command": "Summarize this lease",
+  "context": {
+    "resourceType": "lease",
+    "ref": "leaseA"
+  },
+  "notes": "Page context drives the target; facts are read via loadLease with lease:read.",
+  "expect": {
+    "httpStatus": 201,
+    "tools": [
+      "summarize_lease"
+    ],
+    "statuses": [
+      "ok"
+    ],
+    "citesSources": true,
+    "contains": [
+      "$1500.00",
+      "Theo Test",
+      "lease:{{leaseA}}"
+    ]
+  }
+}

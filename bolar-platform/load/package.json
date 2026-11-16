@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Load scenarios and volume seed run with tsx from the repo root; ESM marker so Node resolves workspace packages."
+}
