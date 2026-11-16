@@ -16,6 +16,12 @@ import { seedGovernanceDemo } from './modules/governance.js';
 import { seedAiDemo } from './modules/ai.js';
 import { seedReportingDemo } from './modules/reporting.js';
 
+// Demo personas share a published password: never seed a production database by accident.
+if (process.env.NODE_ENV === 'production' && process.env.SEED_ALLOW_PRODUCTION !== '1') {
+  throw new Error('Refusing to seed demo data with NODE_ENV=production (set SEED_ALLOW_PRODUCTION=1 to override deliberately)');
+}
+
+
 export async function seedDemo() {
   const { org, admin } = await seedBase();
   const users = Object.fromEntries(await Promise.all(DEMO_USERS.map(async (u) => [u.role, (await prisma.userProfile.findFirstOrThrow({ where: { tenantOrgId: org.id, email: u.email } }))] as const)));

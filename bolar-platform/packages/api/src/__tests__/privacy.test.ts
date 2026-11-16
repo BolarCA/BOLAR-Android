@@ -4,7 +4,8 @@ import { twoTenantFixture, createUser, createUnit } from '@bolar/testing';
 import { prisma } from '@bolar/db';
 import { asUser, testApp } from './helpers.js';
 import type { MockIdentityVerificationProvider } from '@bolar/integrations';
-import { identityProvider, resetIntakeRateForTests } from '../modules/privacy/service.js';
+import { identityProvider } from '../modules/privacy/service.js';
+import { MemoryRateLimitStore, configureRateLimiterForTests, resetRateLimiterForTests } from '../shared/rate-limit.js';
 
 const SUBJECT = 'subject.one@alpha.test';
 
@@ -17,7 +18,6 @@ describe('privacy requests (Day 48): intake, identity, discovery, exceptions, de
 
   beforeAll(async () => {
     fx = await twoTenantFixture();
-    resetIntakeRateForTests();
     lawyer = await createUser(fx.a, 'lawyer', 'counsel@alpha.test');
     lawyerB = await createUser(fx.b, 'lawyer', 'counsel@beta.test');
     await prisma.retentionPolicy.create({ data: { key: 'lease.records', name: 'Lease records', resourceType: 'lease', retainDays: 365 * 7, disposition: 'review' } });
@@ -80,12 +80,15 @@ describe('privacy requests (Day 48): intake, identity, discovery, exceptions, de
     expect(discover.status).toBe(409);
   });
 
-  it('intake is rate limited per address', async () => {
-    resetIntakeRateForTests();
-    let last = 0;
-    for (let i = 0; i < 6; i++) last = (await request(testApp()).post('/privacy-requests/intake').send({ orgSlug: fx.a.slug, kind: 'access', email: `burst${i}@alpha.test` })).status;
-    expect(last).toBe(429);
-    resetIntakeRateForTests();
+  it('intake is rate limited per address by the shared limiter (public_ip policy)', async () => {
+    configureRateLimiterForTests({ enabled: true, store: new MemoryRateLimitStore(), limits: { RATE_LIMIT_PUBLIC_PER_IP: 3 }, trustedIps: new Set() });
+    try {
+      let last = 0;
+      for (let i = 0; i < 4; i++) last = (await request(testApp()).post('/privacy-requests/intake').set('X-Forwarded-For', '203.0.113.9').send({ orgSlug: fx.a.slug, kind: 'access', email: `burst${i}@alpha.test` })).status;
+      expect(last).toBe(429);
+    } finally {
+      resetRateLimiterForTests();
+    }
   });
 
   it('staff discovery collects the subject footprint inside the org only; email is masked without the sensitive permission', async () => {

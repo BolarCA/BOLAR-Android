@@ -6,7 +6,7 @@ import { prisma, tenantDb } from '../../shared/db.js';
 import { audit } from '../../shared/audit.js';
 import { publish } from '../../shared/events.js';
 import { config } from '../../config.js';
-import { SLA_DAYS, checkIntakeRate, discoverSubject, fulfill, identityProvider, reviewExceptions, type DiscoveryResult } from './service.js';
+import { SLA_DAYS, discoverSubject, fulfill, identityProvider, reviewExceptions, type DiscoveryResult } from './service.js';
 
 const DAY_MS = 86_400_000;
 
@@ -26,7 +26,6 @@ export const privacyRoutes = [
   defineRoute({ method: 'post', path: '/privacy-requests/intake', operationId: 'privacyIntake', summary: 'Public DSAR intake: creates the request and starts identity verification (rate limited)', tags: ['privacy'], auth: 'public',
     request: { body: privacyIntake }, responses: { 201: privacyIntakeResponse },
     handler: async ({ body, ctx }) => {
-      checkIntakeRate(ctx.ip);
       const org = await prisma.tenantOrg.findFirst({ where: { slug: body.orgSlug, status: 'active' }, select: { id: true } });
       if (!org) throw errors.notFound('Unknown organization');
       const dueAt = new Date(Date.now() + (SLA_DAYS[body.kind] ?? 30) * DAY_MS);

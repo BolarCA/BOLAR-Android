@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 export function base32Encode(buf: Buffer): string {
@@ -30,10 +30,20 @@ export function totpCode(secretB32: string, time = Date.now(), step = 30, digits
   const code = ((h[offset]! & 0x7f) << 24) | (h[offset + 1]! << 16) | (h[offset + 2]! << 8) | h[offset + 3]!;
   return String(code % 10 ** digits).padStart(digits, '0');
 }
+/** Time step (30 s counter) that `code` matches within the window, or null. Constant-time comparison per candidate. */
+export function matchTotp(secretB32: string, code: string, window = 1, now = Date.now()): number | null {
+  if (!/^\d{6}$/.test(code)) return null;
+  const given = Buffer.from(code);
+  let matched: number | null = null;
+  for (let i = -window; i <= window; i++) {
+    const at = now + i * 30_000;
+    const expected = Buffer.from(totpCode(secretB32, at));
+    if (expected.length === given.length && timingSafeEqual(expected, given)) matched = Math.floor(at / 1000 / 30);
+  }
+  return matched;
+}
 export function verifyTotp(secretB32: string, code: string, window = 1): boolean {
-  const now = Date.now();
-  for (let i = -window; i <= window; i++) if (totpCode(secretB32, now + i * 30_000) === code) return true;
-  return false;
+  return matchTotp(secretB32, code, window) !== null;
 }
 export function otpauthUrl(secret: string, email: string, issuer = 'BOLAR'): string {
   return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&digits=6&period=30`;

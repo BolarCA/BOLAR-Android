@@ -4,13 +4,16 @@ import { prisma } from '../../shared/db.js';
 import { signAccessToken, newOpaqueToken, hashToken } from '../../shared/tokens.js';
 import { config } from '../../config.js';
 import { audit } from '../../shared/audit.js';
-import { generateTotpSecret, otpauthUrl, verifyTotp } from '../../shared/totp.js';
+import { generateTotpSecret, matchTotp, otpauthUrl } from '../../shared/totp.js';
 import { logger } from '../../logger.js';
 import { invalidateSessionCache, invalidateUserCache } from '../../shared/cache.js';
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 const GENERIC = 'Invalid email, password, or organization';
+
+/** Hash verified against on the unknown-user path so response time does not reveal whether an e-mail exists. */
+const timingEqualizer: Promise<string> = hashPassword('bolar-timing-equalizer-not-a-real-password');
 
 export function isLocked(user: { lockedUntil: Date | null }, now = new Date()): boolean {
   return !!user.lockedUntil && user.lockedUntil > now;
@@ -49,18 +52,28 @@ export async function login(ctx: RequestContext, input: { email: string; passwor
     include: { tenantOrg: { select: { id: true, slug: true, name: true, status: true } } },
     take: 10, // ambiguity check only needs "more than one"
   });
+  // An e-mail may exist in several orgs. Asking for orgSlug before the password is checked would reveal that the
+  // address is registered, so the password is verified against every candidate first: one match signs in, several
+  // matches ask for the org (the caller has proven the password), none fails with the generic message.
+  let user = candidates[0];
   if (candidates.length > 1) {
-    // Ambiguous without org; do not reveal which orgs. Client should prompt for org slug.
-    throw errors.validation([{ path: 'body.orgSlug', message: 'orgSlug is required for this account' }], GENERIC);
+    const matches: typeof candidates = [];
+    for (const c of candidates) if (!isLocked(c) && c.tenantOrg.status === 'active' && (await verifyPassword(input.password, c.passwordHash))) matches.push(c);
+    if (matches.length > 1) throw errors.validation([{ path: 'body.orgSlug', message: 'orgSlug is required for this account' }], GENERIC);
+    user = matches[0];
+    if (!user) {
+      await audit(ctx, { action: 'auth.login_failed', resourceType: 'session', outcome: 'deny', metadata: { reason: 'ambiguous_no_match' } });
+      throw errors.unauthenticated(GENERIC);
+    }
   }
-  const user = candidates[0];
   const fail = async (reason: string) => {
     if (user) await recordFailedAttempt(user);
     await audit(ctx, { action: 'auth.login_failed', resourceType: 'session', outcome: 'deny', tenantOrgId: user?.tenantOrgId ?? null, metadata: { reason, userId: user?.id ?? null } });
     logger.info({ requestId: ctx.requestId, reason }, 'login failed');
     throw errors.unauthenticated(GENERIC);
   };
-  if (!user || user.tenantOrg.status !== 'active') return fail(user ? 'org_inactive' : 'unknown_user');
+  if (!user) { await verifyPassword(input.password, await timingEqualizer); return fail('unknown_user'); }
+  if (user.tenantOrg.status !== 'active') return fail('org_inactive');
   if (isLocked(user)) return fail('locked');
   if (!(await verifyPassword(input.password, user.passwordHash))) return fail('bad_password');
 
@@ -139,12 +152,14 @@ export async function mfaVerify(ctx: RequestContext, sessionId: string, code: st
     await audit(ctx, { action: 'auth.mfa_failed', resourceType: 'session', resourceId: sessionId, outcome: 'deny', metadata: { reason: 'locked' } });
     throw errors.forbidden('Invalid verification code');
   }
-  if (!user.mfaSecret || !verifyTotp(user.mfaSecret, code)) {
+  const step = user.mfaSecret ? matchTotp(user.mfaSecret, code) : null;
+  // A code is accepted once: the matched step must be newer than the last accepted one (replay guard).
+  if (step === null || (user.mfaLastUsedStep !== null && step <= user.mfaLastUsedStep)) {
     await recordFailedAttempt(user);
-    await audit(ctx, { action: 'auth.mfa_failed', resourceType: 'session', resourceId: sessionId, outcome: 'deny', metadata: { reason: 'bad_code' } });
+    await audit(ctx, { action: 'auth.mfa_failed', resourceType: 'session', resourceId: sessionId, outcome: 'deny', metadata: { reason: step === null ? 'bad_code' : 'replayed_code' } });
     throw errors.forbidden('Invalid verification code');
   }
-  await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, ...(user.mfaEnabled ? {} : { mfaEnabled: true }) } });
+  await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, mfaLastUsedStep: step, ...(user.mfaEnabled ? {} : { mfaEnabled: true }) } });
   await prisma.session.update({ where: { id: sessionId }, data: { mfaVerified: true } });
   const current = await prisma.session.findUniqueOrThrow({ where: { id: sessionId }, select: { id: true, refreshTokenHash: true } });
   const { tokens } = await issueTokens({ ...user, mfaEnabled: true }, ctx, true, current);

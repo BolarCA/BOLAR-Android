@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import { twoTenantFixture, createUser, TEST_PASSWORD } from '@bolar/testing';
-import { prisma } from '@bolar/db';
+import { prisma, hashPassword } from '@bolar/db';
 import { testApp, loginAs, authed } from './helpers.js';
 import { totpCode } from '../shared/totp.js';
 
@@ -22,6 +22,23 @@ describe('auth (Day 9)', () => {
     expect(res.body.tokenType).toBe('Bearer');
     expect(res.body.org.slug).toBe('alpha-pm');
     expect(res.body.mfaRequired).toBe(false);
+  });
+
+  it('an e-mail present in two orgs signs in by password match, and never reveals itself with a 400 before the password is right', async () => {
+    const dupA = await createUser(fx.a, 'tenant', 'dup@both.test');
+    await createUser(fx.b, 'tenant', 'dup@both.test');
+    const wrong = await request(testApp()).post('/auth/login').send({ email: 'dup@both.test', password: 'definitely-wrong-1' });
+    expect(wrong.status).toBe(401);
+    expect(wrong.body.code).toBe('unauthenticated');
+    // both accounts share the fixture password, so the caller has proven it and is asked which org
+    const both = await request(testApp()).post('/auth/login').send({ email: 'dup@both.test', password: TEST_PASSWORD });
+    expect(both.status).toBe(400);
+    expect(both.body.fieldErrors[0].path).toBe('body.orgSlug');
+    // a password that only one of the two accepts signs that one in without an orgSlug
+    await prisma.userProfile.update({ where: { id: dupA.id }, data: { passwordHash: await hashPassword('OnlyAlphaKnows-99!') } });
+    const one = await request(testApp()).post('/auth/login').send({ email: 'dup@both.test', password: 'OnlyAlphaKnows-99!' });
+    expect(one.status).toBe(200);
+    expect(one.body.org.slug).toBe('alpha-pm');
   });
 
   it('uses one generic error for unknown email, wrong password and wrong org', async () => {
@@ -114,9 +131,33 @@ describe('auth (Day 9)', () => {
     const me = await authed(again.accessToken).get('/me');
     expect(me.status).toBe(200);
     expect(me.body.actor.mfaVerified).toBe(false);
-    const verified = await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret) });
+    // the code already used above is refused (replay guard); the next time step's code is accepted
+    expect((await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret) })).status).toBe(403);
+    const verified = await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret, Date.now() + 30_000) });
     expect(verified.status).toBe(200);
     expect((await authed(verified.body.accessToken).get('/audit')).status).toBe(200);
+  });
+
+  it('cookie transport: refresh token travels only as an httpOnly cookie; refresh and logout use it', async () => {
+    const login = await request(testApp()).post('/auth/login').set('X-Auth-Transport', 'cookie').send({ email: fx.managers.a.email, password: TEST_PASSWORD });
+    expect(login.status).toBe(200);
+    expect(login.body.refreshToken).toBeUndefined();
+    const cookie = (login.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('bolar_rt='))!;
+    expect(cookie).toMatch(/HttpOnly/);
+    expect(cookie).toMatch(/Path=\/auth/);
+    expect(cookie).toMatch(/SameSite=Lax/);
+    const refreshed = await request(testApp()).post('/auth/refresh').set('X-Auth-Transport', 'cookie').set('Cookie', cookie.split(';')[0]!).send({});
+    expect(refreshed.status).toBe(200);
+    expect(refreshed.body.accessToken).toBeTruthy();
+    expect(refreshed.body.refreshToken).toBeUndefined();
+    const rotated = (refreshed.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('bolar_rt='))!;
+    expect(rotated.split(';')[0]).not.toBe(cookie.split(';')[0]);
+    // without a cookie or body token refresh is refused; logout clears the cookie
+    expect((await request(testApp()).post('/auth/refresh').set('X-Auth-Transport', 'cookie').send({})).status).toBe(401);
+    const out = await request(testApp()).post('/auth/logout').set('X-Auth-Transport', 'cookie').set('Cookie', rotated.split(';')[0]!).send({});
+    expect(out.status).toBe(200);
+    expect((out.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('bolar_rt='))).toMatch(/Max-Age=0/);
+    expect((await authed(refreshed.body.accessToken).get('/me')).status).toBe(401);
   });
 
   it('MFA: re-enrollment needs an MFA-verified session; wrong codes lock the account; locks are not extended', async () => {
@@ -149,9 +190,9 @@ describe('auth (Day 9)', () => {
     expect(u2.lockedUntil!.getTime()).toBe(u1.lockedUntil!.getTime());
     expect(u2.failedLogins).toBe(u1.failedLogins);
 
-    // Once the lock passes, a verified session may re-enroll.
+    // Once the lock passes, a verified session may re-enroll (next time step: the earlier code was already consumed).
     await prisma.userProfile.update({ where: { id: victim.id }, data: { lockedUntil: null, failedLogins: 0 } });
-    const verified = await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret) });
+    const verified = await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret, Date.now() + 30_000) });
     expect(verified.status).toBe(200);
     expect((await authed(verified.body.accessToken).post('/auth/mfa/setup')).status).toBe(200);
   });

@@ -120,31 +120,42 @@ export async function refundPayment(ctx: RequestContext, paymentId: string, amou
   const result = await provider.refund({ externalId: p.externalId ?? p.id, amountCents, reason }, { requestId: ctx.requestId, tenantOrgId: ctx.tenantOrgId, actorId: ctx.actor?.userId ?? null, idempotencyKey: `refund:${p.id}:${amountCents}` });
   await recordPaymentEvent(ctx.tenantOrgId!, p.id, provider.name, `${result.externalId}:${result.status}`, 'charge.refunded', { object: { id: result.externalId, payment_intent: p.externalId, amount: amountCents, status: result.status }, reason, source: 'sync' });
   if (result.status === 'failed') throw errors.conflict('Provider rejected the refund');
-  const original = await prisma.journalEntry.findFirst({ where: { tenantOrgId: ctx.tenantOrgId!, idempotencyKey: `payment:${p.id}:succeeded` }, select: { id: true } });
-  if (amountCents === p.amountCents && original) {
-    await reverseJournal(ctx, original.id, `refund: ${reason}`);
-  } else {
-    await postJournal(ctx, {
-      sourceType: 'reversal', sourceId: p.id, memo: `Partial refund of payment ${p.id}: ${reason}`, idempotencyKey: `payment:${p.id}:refund:${amountCents}:${result.externalId}`, reversalOfId: original?.id ?? null,
-      lines: [{ accountCode: ACCOUNTS.AR, debitCents: amountCents, propertyId: p.invoice.lease.propertyId, memo: p.invoice.number }, { accountCode: ACCOUNTS.CASH, creditCents: amountCents, propertyId: p.invoice.lease.propertyId, memo: p.invoice.number }],
-    });
-  }
-  const inv = await db.invoice.findFirst({ where: { id: p.invoiceId } });
-  if (inv) {
-    const paidCents = Math.max(0, inv.paidCents - amountCents);
-    await db.invoice.update({ where: { id: inv.id }, data: { paidCents, status: inv.status === 'void' ? 'void' : allocationStatus(inv.totalCents, paidCents, inv.dueDate) } });
-  }
-  const row = await db.payment.update({ where: { id: p.id }, data: { status: 'refunded', failureReason: null }, include: paymentInclude });
+  await applyRefundBookkeeping(ctx, p, amountCents, { ref: result.externalId, memo: `refund: ${reason}` });
+  const row = (await db.payment.findFirst({ where: { id: p.id }, include: paymentInclude }))!;
   await audit(ctx, { action: 'payment.refund', resourceType: 'payment', resourceId: p.id, before: { status: 'succeeded' }, after: { status: 'refunded', amountCents, reason, approvedBy: ctx.actor!.userId } });
   return row;
 }
 
+/**
+ * Ledger and invoice side of a refund, shared by staff refunds and provider-initiated ones (disputes): a full refund
+ * mirrors the original entry, a partial one posts AR debit / Cash credit; the invoice reopens by the refunded amount and
+ * the payment becomes `refunded`. Idempotent on `payment:<id>:refund:<ref>` and on the reversal key.
+ */
+async function applyRefundBookkeeping(ctx: RequestContext, p: PaymentRow, amountCents: number, opts: { ref: string; memo: string }): Promise<void> {
+  const tenantOrgId = ctx.tenantOrgId!;
+  const original = await prisma.journalEntry.findFirst({ where: { tenantOrgId, idempotencyKey: `payment:${p.id}:succeeded` }, select: { id: true } });
+  if (amountCents >= p.amountCents && original) {
+    await reverseJournal(ctx, original.id, opts.memo);
+  } else {
+    await postJournal(ctx, {
+      sourceType: 'reversal', sourceId: p.id, memo: `Partial refund of payment ${p.id}: ${opts.memo}`, idempotencyKey: `payment:${p.id}:refund:${opts.ref}`, reversalOfId: original?.id ?? null,
+      lines: [{ accountCode: ACCOUNTS.AR, debitCents: amountCents, propertyId: p.invoice.lease.propertyId, memo: p.invoice.number }, { accountCode: ACCOUNTS.CASH, creditCents: amountCents, propertyId: p.invoice.lease.propertyId, memo: p.invoice.number }],
+    });
+  }
+  const inv = await prisma.invoice.findFirst({ where: { id: p.invoiceId, tenantOrgId } });
+  if (inv) {
+    const paidCents = Math.max(0, inv.paidCents - amountCents);
+    await prisma.invoice.update({ where: { id: inv.id }, data: { paidCents, status: inv.status === 'void' ? 'void' : allocationStatus(inv.totalCents, paidCents, inv.dueDate) } });
+  }
+  await prisma.payment.updateMany({ where: { id: p.id, tenantOrgId }, data: { status: 'refunded', failureReason: null } });
+}
+
 /** Stripe-shaped webhook mapping. Finds the Payment by provider externalId and converges it; idempotent by status. */
-export async function handlePaymentWebhook(event: { externalId: string; type: string; payload: unknown }): Promise<'processed' | 'ignored'> {
+export async function handlePaymentWebhook(event: { provider: string; externalId: string; type: string; payload: unknown }): Promise<'processed' | 'ignored'> {
   const obj = (event.payload as { object?: { id?: string; payment_intent?: string; amount?: number; amount_refunded?: number; last_payment_error?: { message?: string } } } | null)?.object;
   const intentId = event.type === 'charge.refunded' ? obj?.payment_intent ?? obj?.id : obj?.id;
   if (!intentId) return 'ignored';
-  const payment = await prisma.payment.findFirst({ where: { externalId: intentId }, include: paymentInclude });
+  const payment = await prisma.payment.findFirst({ where: { provider: event.provider, externalId: intentId }, include: paymentInclude });
   if (!payment) { logger.warn({ externalId: intentId, type: event.type }, 'webhook for unknown payment'); return 'ignored'; }
   const ctx = systemContext(payment.tenantOrgId, `wh_${event.externalId}`);
   await recordPaymentEvent(payment.tenantOrgId, payment.id, payment.provider, event.externalId, event.type, { ...(event.payload as object), source: 'webhook' });
@@ -154,13 +165,8 @@ export async function handlePaymentWebhook(event: { externalId: string; type: st
     case 'charge.refunded': {
       // Provider-initiated refund (e.g. dispute): mirror it when we have not already refunded locally.
       if (payment.status !== 'succeeded') return 'ignored';
-      const amount = obj?.amount_refunded ?? obj?.amount ?? payment.amountCents;
-      const original = await prisma.journalEntry.findFirst({ where: { tenantOrgId: payment.tenantOrgId, idempotencyKey: `payment:${payment.id}:succeeded` }, select: { id: true } });
-      if (amount >= payment.amountCents && original) await reverseJournal(ctx, original.id, `provider refund ${event.externalId}`);
-      else await postJournal(ctx, { sourceType: 'reversal', sourceId: payment.id, memo: `Provider partial refund ${event.externalId}`, idempotencyKey: `payment:${payment.id}:refund:${event.externalId}`, reversalOfId: original?.id ?? null, lines: [{ accountCode: ACCOUNTS.AR, debitCents: amount, propertyId: payment.invoice.lease.propertyId }, { accountCode: ACCOUNTS.CASH, creditCents: amount, propertyId: payment.invoice.lease.propertyId }] });
-      const inv = await prisma.invoice.findFirst({ where: { id: payment.invoiceId } });
-      if (inv) { const paidCents = Math.max(0, inv.paidCents - amount); await prisma.invoice.update({ where: { id: inv.id }, data: { paidCents, status: inv.status === 'void' ? 'void' : allocationStatus(inv.totalCents, paidCents, inv.dueDate) } }); }
-      await prisma.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
+      const amount = Math.min(payment.amountCents, obj?.amount_refunded ?? obj?.amount ?? payment.amountCents);
+      await applyRefundBookkeeping(ctx, payment, amount, { ref: event.externalId, memo: `provider refund ${event.externalId}` });
       await audit(ctx, { action: 'payment.refund', resourceType: 'payment', resourceId: payment.id, after: { amountCents: amount, via: 'webhook', eventId: event.externalId } });
       return 'processed';
     }

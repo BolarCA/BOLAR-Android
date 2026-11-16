@@ -22,7 +22,8 @@ export class MockPaymentProvider implements PaymentProvider {
   async execute(input: ChargeRequest, ctx: AdapterRequestContext): Promise<ChargeResult> {
     this.log.record(input, ctx);
     const tail = input.amountCents % 100;
-    const externalId = `pi_mock_${ctx.idempotencyKey ?? randomUUID()}`;
+    // Provider-generated like Stripe's: never derived from the caller's idempotency key, which another tenant could reuse.
+    const externalId = `pi_mock_${randomUUID()}`;
     if (tail === 99) return { externalId, status: 'failed', failureReason: 'card_declined' };
     if (tail === 98) return { externalId, status: 'pending' };
     return { externalId, status: 'succeeded' };

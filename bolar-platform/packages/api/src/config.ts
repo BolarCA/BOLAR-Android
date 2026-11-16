@@ -19,6 +19,10 @@ const schema = z.object({
   AUTH_JWT_SECRET: z.string().min(32),
   AUTH_ACCESS_TTL_SECONDS: z.coerce.number().default(900),
   AUTH_REFRESH_TTL_SECONDS: z.coerce.number().default(1209600),
+  /** Refresh cookie attributes for browser clients (X-Auth-Transport: cookie). */
+  AUTH_COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  AUTH_COOKIE_SECURE: z.enum(['0', '1']).default('0'),
+  AUTH_COOKIE_DOMAIN: z.string().optional(),
   DATABASE_URL: z.string(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   QUEUE_DRIVER: z.enum(['memory', 'redis']).default('memory'),

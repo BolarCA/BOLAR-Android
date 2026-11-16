@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MeResponseDto } from '@bolar/contracts';
-import { ApiError, authApi, hasRefreshToken, setTokens } from './api-client';
+import { ApiError, authApi, hasSession, setTokens } from './api-client';
 
 interface AuthState {
   me: MeResponseDto | null;
@@ -21,7 +21,7 @@ function AuthInner({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(false);
   const [booted, setBooted] = useState(false);
   // Session discovery runs after hydration; until then status is 'loading' so guards never redirect on first paint.
-  useEffect(() => { setEnabled(hasRefreshToken()); setBooted(true); }, []);
+  useEffect(() => { setEnabled(hasSession()); setBooted(true); }, []);
   const meQuery = useQuery({
     queryKey: ['me'],
     queryFn: () => authApi.me(),

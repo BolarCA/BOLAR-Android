@@ -5,7 +5,11 @@ import { prisma } from './db.js';
 import { verifyAccessToken } from './tokens.js';
 import { audit } from './audit.js';
 import { config } from '../config.js';
-import { meCache, meCacheKey, meCacheStats } from './cache.js';
+import { TtlCache, meCache, meCacheKey, meCacheStats } from './cache.js';
+
+const CROSS_TENANT_AUDIT_WINDOW_MS = 60_000;
+const crossTenantAudited = new TtlCache<boolean>(5_000);
+export function resetCrossTenantAuditForTests(): void { crossTenantAudited.clear(); }
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -72,7 +76,13 @@ export async function buildContext(req: Request, res: Response, next: NextFuncti
       if (!support && !isPlatformAdmin) throw errors.forbidden();
       ctx.tenantOrgId = target.id;
       ctx.supportSessionId = support?.id ?? null;
-      await audit(ctx, { action: 'support.cross_tenant_access', resourceType: 'tenant_org', resourceId: target.id, metadata: { via: support ? 'support_session' : 'platform_admin', path: req.path } });
+      // One audit row per (agent, org, session) per minute: enough to reconstruct who acted where and when without
+      // writing a row for every poll of /me (each request still carries supportSessionId in its own audit rows).
+      const windowKey = `${user.id}:${target.id}:${support?.id ?? 'platform_admin'}`;
+      if (!crossTenantAudited.get(windowKey)) {
+        crossTenantAudited.set(windowKey, true, CROSS_TENANT_AUDIT_WINDOW_MS);
+        await audit(ctx, { action: 'support.cross_tenant_access', resourceType: 'tenant_org', resourceId: target.id, metadata: { via: support ? 'support_session' : 'platform_admin', path: req.path, windowMs: CROSS_TENANT_AUDIT_WINDOW_MS } });
+      }
     }
 
     const resolved = await resolveRoles(user.id, ctx.tenantOrgId!, session.id);

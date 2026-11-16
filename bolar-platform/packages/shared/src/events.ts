@@ -10,9 +10,18 @@ export interface DomainEvent<TName extends string = string, TPayload = unknown> 
 
 type Handler = (event: DomainEvent) => Promise<void> | void;
 
+export interface EventBusOptions {
+  /** Called when a handler throws; defaults to console.error. The API installs its structured logger here. */
+  onError?: (err: unknown, event: DomainEvent) => void;
+}
+
 export class EventBus {
   private handlers = new Map<string, Handler[]>();
   private wildcard: Handler[] = [];
+  private readonly onError: (err: unknown, event: DomainEvent) => void;
+  constructor(options: EventBusOptions = {}) {
+    this.onError = options.onError ?? ((err, event) => console.error(`[events] handler for ${event.name} failed`, err));
+  }
 
   on(name: string, handler: Handler): () => void {
     if (name === '*') {
@@ -31,8 +40,8 @@ export class EventBus {
       try {
         await h(event as DomainEvent);
       } catch (err) {
-        // Event handlers must never break the request path; log and continue.
-        console.error(`[events] handler for ${event.name} failed`, err);
+        // Event handlers must never break the request path; report and continue.
+        this.onError(err, event as DomainEvent);
       }
     }
   }

@@ -23,8 +23,12 @@ describe('provider contract tests (Day 56)', () => {
     expect((await p.execute({ amountCents: 145000, currency: 'usd', customerRef: 'c', paymentMethodRef: 'pm', description: 'rent', metadata: {} }, ctx)).status).toBe('succeeded');
     expect((await p.execute({ amountCents: 10099, currency: 'usd', customerRef: 'c', paymentMethodRef: 'pm', description: 'rent', metadata: {} }, ctx)).status).toBe('failed');
     expect((await p.execute({ amountCents: 10098, currency: 'usd', customerRef: 'c', paymentMethodRef: 'pm', description: 'rent', metadata: {} }, ctx)).status).toBe('pending');
+    // ids are provider-generated (never derived from the caller's idempotency key, which another tenant could reuse)
     const a = await p.execute({ amountCents: 100, currency: 'usd', customerRef: 'c', paymentMethodRef: 'pm', description: 'rent', metadata: {} }, ctx);
-    expect(a.externalId).toContain('k1');
+    const b = await p.execute({ amountCents: 100, currency: 'usd', customerRef: 'c', paymentMethodRef: 'pm', description: 'rent', metadata: {} }, ctx);
+    expect(a.externalId).toMatch(/^pi_mock_[0-9a-f-]{36}$/);
+    expect(a.externalId).not.toBe(b.externalId);
+    expect(a.externalId).not.toContain('k1');
   });
   it('webhooks: signature verified, duplicates ignored, handler runs once', async () => {
     const p = new MockPaymentProvider();

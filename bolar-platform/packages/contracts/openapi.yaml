@@ -190,7 +190,6 @@ components:
           type: boolean
       required:
         - accessToken
-        - refreshToken
         - expiresIn
         - tokenType
         - mfaRequired
@@ -218,8 +217,6 @@ components:
         refreshToken:
           type: string
           minLength: 16
-      required:
-        - refreshToken
     Ok:
       type: object
       properties:
@@ -10911,7 +10908,7 @@ paths:
   /auth/refresh:
     post:
       operationId: refreshSession
-      summary: Rotate refresh token and issue a new access token
+      summary: Rotate refresh token and issue a new access token (token from the body, or from the httpOnly cookie for browser clients)
       tags:
         - auth
       security: []

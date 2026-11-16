@@ -15,7 +15,8 @@ export const orgSummary = z.object({ id: idSchema, slug: z.string(), name: z.str
 export const tokenPair = z
   .object({
     accessToken: z.string(),
-    refreshToken: z.string(),
+    /** Absent when the client asked for cookie transport (X-Auth-Transport: cookie): the token is then an httpOnly cookie. */
+    refreshToken: z.string().optional(),
     expiresIn: z.number().int(),
     tokenType: z.literal('Bearer'),
     mfaRequired: z.boolean(),
@@ -29,7 +30,7 @@ export const loginResponse = tokenPair
   })
   .openapi('LoginResponse');
 
-export const refreshRequest = z.object({ refreshToken: z.string().min(16) }).openapi('RefreshRequest');
+export const refreshRequest = z.object({ refreshToken: z.string().min(16).optional() }).openapi('RefreshRequest');
 export const logoutRequest = z.object({ refreshToken: z.string().min(16).optional() }).openapi('LogoutRequest');
 export const mfaVerifyRequest = z.object({ code: z.string().regex(/^\d{6}$/) }).openapi('MfaVerifyRequest');
 export const mfaSetupResponse = z.object({ secret: z.string(), otpauthUrl: z.string() }).openapi('MfaSetupResponse');

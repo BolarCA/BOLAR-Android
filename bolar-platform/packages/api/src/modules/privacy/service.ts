@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createIdentityVerificationProvider, type IdentityVerificationProvider } from '@bolar/integrations';
-import { AppError, errors, type RequestContext } from '@bolar/shared';
+import { errors, type RequestContext } from '@bolar/shared';
 import { prisma } from '../../shared/db.js';
 import { audit } from '../../shared/audit.js';
 import { config } from '../../config.js';
@@ -14,18 +14,7 @@ export function identityProvider(): IdentityVerificationProvider {
   return idv;
 }
 
-// ---- Public intake rate limit (simple in-memory per-IP window) ----
-const WINDOW_MS = 15 * 60_000;
-const MAX_PER_WINDOW = 5;
-const hits = new Map<string, number[]>();
-export function checkIntakeRate(ip: string | null, now = Date.now()): void {
-  const key = ip ?? 'unknown';
-  const list = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (list.length >= MAX_PER_WINDOW) throw new AppError('rate_limited', 'Too many privacy requests from this address; try again later', 429);
-  list.push(now);
-  hits.set(key, list);
-}
-export function resetIntakeRateForTests(): void { hits.clear(); }
+// Public intake is rate limited by the shared middleware (shared/rate-limit.ts, policy public_ip for /privacy-requests/intake).
 
 export const SLA_DAYS: Record<string, number> = { access: 30, correction: 30, portability: 30, deletion: 45 };
 

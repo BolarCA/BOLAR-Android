@@ -23,7 +23,8 @@ export function createApp(): Express {
   app.use(requestTiming());
   app.use(helmet());
   app.use(cors({ origin: cfg.CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: true, exposedHeaders: ['X-Request-Id', 'Idempotent-Replayed', 'Retry-After', 'RateLimit-Limit', 'RateLimit-Remaining'] }));
-  app.use((req, res, next) => (req.path.startsWith('/webhooks/') ? next() : express.json({ limit: '2mb' })(req, res, next)));
+  // Webhooks keep their raw body for signature checks; storage uploads are raw bytes whatever their Content-Type.
+  app.use((req, res, next) => (req.path.startsWith('/webhooks/') || req.path === '/storage/object' ? next() : express.json({ limit: '2mb' })(req, res, next)));
   app.use(
     pinoHttp({
       logger,

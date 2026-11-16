@@ -1,10 +1,15 @@
 'use client';
 import type { ErrorBodyDto, LoginResponseDto, MeResponseDto } from '@bolar/contracts';
 
-/** Typed REST client (blueprint p10 lib/api-client.ts). Tokens: access in memory, refresh in localStorage. */
+/**
+ * Typed REST client (blueprint p10 lib/api-client.ts). The access token lives in memory only; the refresh token is an
+ * httpOnly cookie the API sets when it sees `X-Auth-Transport: cookie`, so no script on this origin can read it. A
+ * non-secret flag in localStorage records that a session was started so the app knows to attempt a refresh on load.
+ */
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
-const REFRESH_KEY = 'bolar.refreshToken';
+const SESSION_FLAG = 'bolar.session';
 const ORG_KEY = 'bolar.orgSlug';
+const TRANSPORT_HEADERS = { 'X-Auth-Transport': 'cookie' } as const;
 /** Platform staff "act as org" target (slug). Sent as X-Tenant-Org on every request; the API audits each use. */
 const ACT_AS_KEY = 'bolar.actAsOrg';
 
@@ -23,11 +28,11 @@ export class ApiError extends Error {
   get isNotFound() { return this.status === 404; }
 }
 
-export function setTokens(t: { accessToken: string; refreshToken: string } | null, orgSlug?: string) {
+export function setTokens(t: { accessToken: string; refreshToken?: string } | null, orgSlug?: string) {
   accessToken = t?.accessToken ?? null;
   try {
-    if (t) { localStorage.setItem(REFRESH_KEY, t.refreshToken); if (orgSlug) localStorage.setItem(ORG_KEY, orgSlug); }
-    else { localStorage.removeItem(REFRESH_KEY); localStorage.removeItem(ORG_KEY); localStorage.removeItem(ACT_AS_KEY); }
+    if (t) { localStorage.setItem(SESSION_FLAG, '1'); if (orgSlug) localStorage.setItem(ORG_KEY, orgSlug); }
+    else { localStorage.removeItem(SESSION_FLAG); localStorage.removeItem(ORG_KEY); localStorage.removeItem(ACT_AS_KEY); localStorage.removeItem('bolar.refreshToken'); }
   } catch { /* storage unavailable (private mode); session stays in memory */ }
 }
 export function getActAsOrg(): string | null {
@@ -36,20 +41,21 @@ export function getActAsOrg(): string | null {
 export function setActAsOrg(slug: string | null) {
   try { if (slug) localStorage.setItem(ACT_AS_KEY, slug); else localStorage.removeItem(ACT_AS_KEY); } catch { /* storage unavailable */ }
 }
-export function hasRefreshToken(): boolean {
-  try { return Boolean(localStorage.getItem(REFRESH_KEY)); } catch { return false; }
+/** Whether a session was started in this browser (the refresh cookie itself is not readable from scripts). */
+export function hasSession(): boolean {
+  try { return localStorage.getItem(SESSION_FLAG) === '1'; } catch { return false; }
 }
+/** @deprecated use hasSession */
+export const hasRefreshToken = hasSession;
 export function getAccessToken() { return accessToken; }
 
 async function refresh(): Promise<boolean> {
   if (refreshing) return refreshing;
   refreshing = (async () => {
-    let token: string | null = null;
-    try { token = localStorage.getItem(REFRESH_KEY); } catch { token = null; }
-    if (!token) return false;
-    const res = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: token }) });
+    if (!hasSession()) return false;
+    const res = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...TRANSPORT_HEADERS }, body: '{}' });
     if (!res.ok) { setTokens(null); return false; }
-    const body = (await res.json()) as { accessToken: string; refreshToken: string };
+    const body = (await res.json()) as { accessToken: string };
     setTokens(body);
     return true;
   })().finally(() => { refreshing = null; });
@@ -59,16 +65,19 @@ async function refresh(): Promise<boolean> {
 export interface RequestOptions { method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown; headers?: Record<string, string>; idempotencyKey?: string; purpose?: string; signal?: AbortSignal }
 
 export async function api<T>(path: string, opts: RequestOptions = {}, retry = true): Promise<T> {
-  if (!accessToken && hasRefreshToken()) await refresh();
+  if (!accessToken && hasSession()) await refresh();
   const actAs = getActAsOrg();
-  const headers: Record<string, string> = { Accept: 'application/json', ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(actAs ? { 'X-Tenant-Org': actAs } : {}), ...(opts.headers ?? {}) };
+  const headers: Record<string, string> = { Accept: 'application/json', ...TRANSPORT_HEADERS, ...(opts.body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(actAs ? { 'X-Tenant-Org': actAs } : {}), ...(opts.headers ?? {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
   if (opts.purpose) headers['X-Access-Purpose'] = opts.purpose;
-  const res = await fetch(`${API_BASE}${path}`, { method: opts.method ?? 'GET', headers, body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined, signal: opts.signal });
+  const res = await fetch(`${API_BASE}${path}`, { method: opts.method ?? 'GET', headers, credentials: 'include', body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined, signal: opts.signal });
   if (res.status === 204) return undefined as T;
   const text = await res.text();
-  const json = text ? (JSON.parse(text) as unknown) : null;
+  let json: unknown = null;
+  if (text) {
+    try { json = JSON.parse(text); } catch { json = null; } // HTML error pages from a proxy, plain-text 413s, ...
+  }
   if (!res.ok) {
     if (res.status === 401 && retry && (await refresh())) return api<T>(path, opts, false);
     const body = (json as ErrorBodyDto | null) ?? { code: 'internal_error', message: res.statusText, requestId: res.headers.get('x-request-id') ?? 'unknown' };
@@ -81,11 +90,9 @@ export const authApi = {
   login: (input: { email: string; password: string; orgSlug?: string }) => api<LoginResponseDto>('/auth/login', { method: 'POST', body: input }),
   me: () => api<MeResponseDto>('/me'),
   logout: async () => {
-    let token: string | null = null;
-    try { token = localStorage.getItem(REFRESH_KEY); } catch { token = null; }
-    try { await api('/auth/logout', { method: 'POST', body: token ? { refreshToken: token } : {} }); } finally { setTokens(null); }
+    try { await api('/auth/logout', { method: 'POST', body: {} }); } finally { setTokens(null); }
   },
-  verifyMfa: (code: string) => api<{ accessToken: string; refreshToken: string; mfaRequired: boolean }>('/auth/mfa/verify', { method: 'POST', body: { code } }),
+  verifyMfa: (code: string) => api<{ accessToken: string; mfaRequired: boolean }>('/auth/mfa/verify', { method: 'POST', body: { code } }),
   acceptInvite: (input: { token: string; name: string; password: string }) => api<{ ok: true; orgSlug: string; email: string }>('/invitations/accept', { method: 'POST', body: input }),
 };
 

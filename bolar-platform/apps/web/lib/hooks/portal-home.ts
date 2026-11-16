@@ -41,7 +41,7 @@ export function useMfaVerify() {
   const qc = useQueryClient();
   const { me } = useAuth();
   return useMutation({
-    mutationFn: (code: string) => api<{ accessToken: string; refreshToken: string }>('/auth/mfa/verify', { method: 'POST', body: { code } }),
+    mutationFn: (code: string) => api<{ accessToken: string; refreshToken?: string }>('/auth/mfa/verify', { method: 'POST', body: { code } }),
     onSuccess: (tokens) => { setTokens(tokens, me?.org.slug); void qc.invalidateQueries({ queryKey: ['me'] }); },
   });
 }
