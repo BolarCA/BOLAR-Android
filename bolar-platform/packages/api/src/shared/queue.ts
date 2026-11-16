@@ -24,13 +24,51 @@ export function backoffDelayMs(attempt: number, s: BackoffSettings = backoffSett
   return Math.round(raw * (1 - s.jitter * r));
 }
 
-/** In-memory queue for tests/dev without Redis; drained by tests via `drainMemoryQueue`. */
+/**
+ * In-memory queue (QUEUE_DRIVER=memory). Jobs are either handed to an in-process consumer registered with
+ * `setMemoryQueueConsumer` (the workers package does this in `inproc` mode so dev runs still send notifications and
+ * run reactions), or buffered for tests to inspect via `drainMemoryQueue`. The buffer is bounded: once it holds
+ * MEMORY_QUEUE_MAX jobs the oldest are dropped and a warning is logged, so a long-lived process without a consumer
+ * cannot grow without limit. Outside NODE_ENV=test a process that enqueues with no consumer attached logs a warning
+ * once, because that configuration silently performs no background work.
+ */
 export const memoryQueue: QueuedJob[] = [];
+export const MEMORY_QUEUE_MAX = 10_000;
+export type MemoryQueueConsumer = (job: QueuedJob) => Promise<void>;
+let memoryConsumer: MemoryQueueConsumer | null = null;
+let memoryDropped = 0;
+let warnedNoConsumer = false;
 const redisQueues = new Map<string, Queue>();
+
+/** Register (or clear with null) the in-process consumer for the memory driver. */
+export function setMemoryQueueConsumer(consumer: MemoryQueueConsumer | null): void {
+  memoryConsumer = consumer;
+}
+export function memoryQueueStats(): { buffered: number; dropped: number; consumerAttached: boolean } {
+  return { buffered: memoryQueue.length, dropped: memoryDropped, consumerAttached: memoryConsumer !== null };
+}
+
+function enqueueMemory(job: QueuedJob): void {
+  if (memoryConsumer) {
+    const consumer = memoryConsumer;
+    // Deliver off the request path; a failing consumer is logged, never surfaced to the caller (same as a BullMQ worker).
+    setImmediate(() => { void consumer(job).catch((err) => logger.error({ err: err instanceof Error ? err.message : String(err), queue: job.name }, 'memory queue consumer failed')); });
+    return;
+  }
+  if (!warnedNoConsumer && config().NODE_ENV !== 'test') {
+    warnedNoConsumer = true;
+    logger.warn({ queue: job.name }, 'QUEUE_DRIVER=memory with no in-process consumer: jobs are buffered, not processed (run the workers inproc entry or use QUEUE_DRIVER=redis)');
+  }
+  memoryQueue.push(job);
+  if (memoryQueue.length > MEMORY_QUEUE_MAX) {
+    memoryQueue.splice(0, memoryQueue.length - MEMORY_QUEUE_MAX);
+    if (++memoryDropped % 1000 === 1) logger.warn({ dropped: memoryDropped, max: MEMORY_QUEUE_MAX }, 'memory queue full; oldest jobs dropped');
+  }
+}
 
 export async function enqueue(queueName: string, data: Record<string, unknown>, opts: { jobId?: string; delay?: number } = {}): Promise<void> {
   if (config().QUEUE_DRIVER === 'memory') {
-    memoryQueue.push({ name: queueName, data, opts });
+    enqueueMemory({ name: queueName, data, opts });
     return;
   }
   let q = redisQueues.get(queueName);

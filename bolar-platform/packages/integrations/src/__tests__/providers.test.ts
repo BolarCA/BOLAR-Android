@@ -40,6 +40,18 @@ describe('provider contract tests (Day 56)', () => {
     expect(await processWebhook(bad, store, handler)).toBe('rejected_signature');
     expect(await processWebhook(ok, store, handler)).toBe('processed');
     expect(await processWebhook(ok, store, handler)).toBe('duplicate');
+    // A delivery whose handler failed is recorded with its error and re-run on the provider's retry.
+    const errors = new Map<string, string | null>();
+    const retryStore = {
+      recordOnce: async (e: WebhookEvent) => { if (!errors.has(e.externalId)) { errors.set(e.externalId, null); return 'new' as const; } return errors.get(e.externalId) ? 'retry' as const : 'duplicate' as const; },
+      markProcessed: async (e: WebhookEvent, error?: string) => { errors.set(e.externalId, error ?? null); },
+    };
+    let calls = 0;
+    const flaky = async () => { calls++; if (calls === 1) throw new Error('db down'); return 'processed' as const; };
+    await expect(processWebhook(ok, retryStore, flaky)).rejects.toThrow('db down');
+    expect(await processWebhook(ok, retryStore, flaky)).toBe('processed');
+    expect(await processWebhook(ok, retryStore, flaky)).toBe('duplicate');
+    expect(calls).toBe(2);
     expect(runs).toBe(1);
   });
   it('e-sign mock tracks envelope lifecycle via signed webhooks', async () => {

@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
+    "dev:inproc": "tsx src/inproc.ts",
     "start": "node dist/index.js",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",

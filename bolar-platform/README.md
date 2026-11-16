@@ -17,6 +17,10 @@ scripts/dev-bootstrap.sh                               # installs, builds packag
 pnpm dev                                               # web :3000, api :4000, workers
 ```
 
+Without Redis (`QUEUE_DRIVER=memory`) the API buffers background jobs in memory and nothing processes them. For a
+single-process dev run that still sends notifications and runs reactions, start the API through the workers package
+instead: `pnpm --filter @bolar/workers dev:inproc` (API plus in-process consumers) and `pnpm --filter @bolar/web dev`.
+
 Sign in at http://localhost:3000/login with any demo persona (password `Bolar!Demo2026`):
 
 | Persona | Email | Portal |

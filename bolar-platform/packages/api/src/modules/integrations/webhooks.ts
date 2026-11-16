@@ -1,5 +1,5 @@
 import type { WebhookEvent } from '@bolar/integrations';
-import { processWebhook, type WebhookOutcome } from '@bolar/integrations';
+import { processWebhook, type RecordOutcome, type WebhookOutcome } from '@bolar/integrations';
 import { prisma } from '../../shared/db.js';
 import { logger } from '../../logger.js';
 
@@ -23,15 +23,22 @@ export function hasWebhookProvider(provider: string): boolean {
   return verifiers.has(provider);
 }
 
-/** Persists each (provider, externalId) once; duplicates are acknowledged but not re-processed. */
+/**
+ * Persists each (provider, externalId) once. A duplicate of a successfully processed event is acknowledged without
+ * re-processing; a duplicate of an event whose handler failed (error set) is re-run, so a transient failure is healed
+ * by the provider's retry instead of being lost.
+ */
 const store = {
-  async recordOnce(event: WebhookEvent) {
+  async recordOnce(event: WebhookEvent): Promise<RecordOutcome> {
     try {
       await prisma.webhookEvent.create({ data: { provider: event.provider, externalId: event.externalId, signatureOk: event.signatureOk, payload: (event.payload ?? {}) as object } });
-      return true;
+      return 'new';
     } catch (err) {
-      if ((err as { code?: string }).code === 'P2002') return false;
-      throw err;
+      if ((err as { code?: string }).code !== 'P2002') throw err;
+      const existing = await prisma.webhookEvent.findUnique({ where: { provider_externalId: { provider: event.provider, externalId: event.externalId } }, select: { error: true } });
+      if (!existing?.error) return 'duplicate';
+      await prisma.webhookEvent.update({ where: { provider_externalId: { provider: event.provider, externalId: event.externalId } }, data: { error: null, processedAt: null } });
+      return 'retry';
     }
   },
   async markProcessed(event: WebhookEvent, error?: string) {
