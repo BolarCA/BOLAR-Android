@@ -21,8 +21,9 @@ export const invoiceRoutes: RouteDef[] = [
       const scopeWhere = invoiceScopeWhere(await financeScope(ctx));
       if (!scopeWhere) return { body: { items: [], nextCursor: null } };
       const c = decodeCursor<{ id: string }>(query.cursor);
-      const where: Prisma.InvoiceWhereInput = {
-        ...scopeWhere,
+      // The scope filter is an OR of lease/property ids for tenants and landlords; every request filter is ANDed with
+      // it so a filter that is itself an OR (overdue) can never replace the scope (review pass 2, finding B-1).
+      const filters: Prisma.InvoiceWhereInput = {
         ...(query.status ? { status: query.status } : {}),
         ...(query.leaseId ? { leaseId: query.leaseId } : {}),
         ...(query.tenantProfileId ? { tenantProfileId: query.tenantProfileId } : {}),
@@ -30,6 +31,7 @@ export const invoiceRoutes: RouteDef[] = [
         ...(query.dueBefore || query.dueAfter ? { dueDate: { ...(query.dueAfter ? { gte: new Date(query.dueAfter) } : {}), ...(query.dueBefore ? { lte: new Date(query.dueBefore) } : {}) } } : {}),
         ...(query.overdue === 'true' ? { OR: [{ status: 'overdue' }, { status: { in: ['open', 'partially_paid'] }, dueDate: { lt: startOfToday() } }] } : {}),
       };
+      const where: Prisma.InvoiceWhereInput = { AND: [scopeWhere, filters] };
       const rows = await tenantDb(ctx).invoice.findMany({ where, include: invoiceInclude, take: query.limit + 1, orderBy: { id: 'desc' }, ...(c ? { cursor: { id: c.id }, skip: 1 } : {}) });
       const page = toPage(rows, query.limit);
       return { body: { ...page, items: await invoiceDtos(page.items, ctx) } };

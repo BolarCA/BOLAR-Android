@@ -19,6 +19,19 @@ function requireTemplateRead(ctx: RequestContext): void {
   if (!ctx.permissions.has('template:read') && !ctx.permissions.has('template:approve')) throw errors.forbidden();
 }
 
+/**
+ * Templates whose output is a legal notice, an adverse-action/FCRA letter, a privacy answer, a lease or screening text
+ * are always high risk (second-person approval, never auto-approved on submit), whatever the author asks for; an
+ * author may raise a risk level but never lower it below the key's floor (review pass 2, finding A-2).
+ */
+const HIGH_RISK_KEY_PREFIXES = ['notice.', 'adverse', 'fcra', 'privacy.', 'lease.', 'screening.'];
+export function effectiveRiskLevel(key: string, requested: 'low' | 'medium' | 'high' | undefined): 'low' | 'medium' | 'high' {
+  const floor = HIGH_RISK_KEY_PREFIXES.some((p) => key.toLowerCase().startsWith(p)) ? 'high' : 'low';
+  const rank = { low: 0, medium: 1, high: 2 } as const;
+  const asked = requested ?? 'low';
+  return rank[asked] >= rank[floor] ? asked : floor;
+}
+
 export const templateRoutes: RouteDef[] = [
   defineRoute({ method: 'get', path: '/templates', operationId: 'listTemplates', summary: 'List org templates and platform defaults (template:read or template:approve)', tags: ['template'], auth: 'session',
     request: { query: templateQuery }, responses: { 200: templatePage },
@@ -43,7 +56,8 @@ export const templateRoutes: RouteDef[] = [
     handler: async ({ body, ctx }) => {
       const dup = await prisma.template.findFirst({ where: { tenantOrgId: ctx.tenantOrgId!, key: body.key } });
       if (dup) throw errors.conflict('A template with this key already exists in your organization');
-      const t = await prisma.template.create({ data: { tenantOrgId: ctx.tenantOrgId!, key: body.key, channel: body.channel, name: body.name, riskLevel: body.riskLevel, jurisdiction: body.jurisdiction ?? null, currentVersion: 0 } });
+      const riskLevel = effectiveRiskLevel(body.key, body.riskLevel);
+      const t = await prisma.template.create({ data: { tenantOrgId: ctx.tenantOrgId!, key: body.key, channel: body.channel, name: body.name, riskLevel, jurisdiction: body.jurisdiction ?? null, currentVersion: 0 } });
       const v = await prisma.templateVersion.create({ data: { tenantOrgId: ctx.tenantOrgId!, templateId: t.id, version: 1, subject: body.subject ?? null, body: body.body, variables: body.variables ?? [], status: 'draft', createdBy: ctx.actor!.userId } });
       await audit(ctx, { action: 'template.create', resourceType: 'template', resourceId: t.id, after: { key: t.key, channel: t.channel, riskLevel: t.riskLevel, jurisdiction: t.jurisdiction, versionId: v.id } });
       return { status: 201, body: { ...templateDto({ ...t, versions: [v] }), versions: [versionDto(v)] } };

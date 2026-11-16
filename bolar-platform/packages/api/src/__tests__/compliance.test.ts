@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { twoTenantFixture, createUser, createProperty } from '@bolar/testing';
+import { twoTenantFixture, createUser, createProperty, createOrg } from '@bolar/testing';
 import { prisma } from '@bolar/db';
 import { asUser } from './helpers.js';
 import { evaluate, validateConditions, matchTerms } from '../modules/compliance/engine.js';
@@ -176,32 +176,40 @@ describe('compliance API (Days 41-45): catalog, evaluate, queue, overrides, guar
     expect(auditRow?.policyVersion).toBe(`${RULE_KEYS.caDepositCap}@v1`);
   });
 
-  it('rule lifecycle: create draft -> author cannot activate -> another approver activates -> new version retires previous', async () => {
+  it('rule lifecycle: platform authors only; author cannot activate -> another approver activates -> new version retires previous', async () => {
+    const platformOrg = await createOrg('bolar-platform-rules', 'Platform');
+    const pa1 = await asUser(await createUser(platformOrg, 'platform_admin', 'rules1@platform.test', { isPlatform: true }));
+    const pa2User = await createUser(platformOrg, 'platform_admin', 'rules2@platform.test', { isPlatform: true });
+    const pa2 = await asUser(pa2User);
     const o = await asUser(officerA);
-    const bad = await o.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'Test cap', description: 'fixture', conditions: { all: [{ field: 'increasePercent', op: 'bogus' }] } });
+    // the catalog binds every organization: org compliance officers and lawyers cannot write to it
+    expect((await o.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'Test cap', description: 'fixture', action: 'warn', conditions: { all: [{ field: 'increasePercent', op: 'gt', value: 10 }] } })).status).toBe(403);
+    const bad = await pa1.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'Test cap', description: 'fixture', conditions: { all: [{ field: 'increasePercent', op: 'bogus' }] } });
     expect(bad.status).toBe(400);
-    const created = await o.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'Test cap', description: 'fixture', action: 'warn', conditions: { all: [{ field: 'increasePercent', op: 'gt', value: 10 }] }, sourceUrl: 'https://example.test/ab1482' });
+    const created = await pa1.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'Test cap', description: 'fixture', action: 'warn', conditions: { all: [{ field: 'increasePercent', op: 'gt', value: 10 }] }, sourceUrl: 'https://example.test/ab1482' });
     expect(created.status).toBe(201);
     expect(created.body).toMatchObject({ version: 1, status: 'draft' });
-    expect((await o.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'dup', description: 'dup', conditions: { all: [{ field: 'x', op: 'is_null' }] } })).status).toBe(409);
-    const self = await o.post(`/rules/${created.body.id}/activate`);
+    expect((await pa1.post('/rules').send({ key: 'us-ca.rent.cap_test', jurisdiction: 'US-CA', domain: 'rent', title: 'dup', description: 'dup', conditions: { all: [{ field: 'x', op: 'is_null' }] } })).status).toBe(409);
+    const self = await pa1.post(`/rules/${created.body.id}/activate`);
     expect(self.status).toBe(403);
     const l = await asUser(lawyerA);
-    const active = await l.post(`/rules/${created.body.id}/activate`);
+    expect((await l.post(`/rules/${created.body.id}/activate`)).status).toBe(403); // org lawyer: read-only on the catalog
+    const active = await pa2.post(`/rules/${created.body.id}/activate`);
     expect(active.status).toBe(200);
-    expect(active.body).toMatchObject({ status: 'active', approvedBy: lawyerA.id });
+    expect(active.body).toMatchObject({ status: 'active', approvedBy: pa2User.id });
     // draft rules are not evaluated; active ones are
     const m = await asUser(fx.managers.a);
     const hit = await m.post('/rules/evaluate').send({ domain: 'rent', resourceType: 'lease', resourceId: 'lease_fixture_3', facts: { increasePercent: 12 }, propertyId: caProp.id });
     expect(hit.body.hits.map((h: { ruleKey: string }) => h.ruleKey)).toEqual(['us-ca.rent.cap_test']);
-    const v2 = await l.post(`/rules/${created.body.id}/new-version`).send({ conditions: { all: [{ field: 'increasePercent', op: 'gt', value: 5 }] } });
+    const v2 = await pa2.post(`/rules/${created.body.id}/new-version`).send({ conditions: { all: [{ field: 'increasePercent', op: 'gt', value: 5 }] } });
     expect(v2.status).toBe(201);
     expect(v2.body).toMatchObject({ version: 2, status: 'draft', key: 'us-ca.rent.cap_test' });
-    expect((await l.post(`/rules/${v2.body.id}/activate`)).status).toBe(403); // lawyer authored v2
-    expect((await o.post(`/rules/${v2.body.id}/activate`)).status).toBe(200);
+    expect((await pa2.post(`/rules/${v2.body.id}/activate`)).status).toBe(403); // pa2 authored v2
+    expect((await pa1.post(`/rules/${v2.body.id}/activate`)).status).toBe(200);
     const v1 = await o.get(`/rules/${created.body.id}`);
     expect(v1.body.status).toBe('retired');
-    const retire = await o.post(`/rules/${v2.body.id}/retire`);
+    expect((await o.post(`/rules/${v2.body.id}/retire`)).status).toBe(403);
+    const retire = await pa1.post(`/rules/${v2.body.id}/retire`);
     expect(retire.body.status).toBe('retired');
     expect((await m.post('/rules/evaluate').send({ domain: 'rent', resourceType: 'lease', resourceId: 'lease_fixture_4', facts: { increasePercent: 12 }, propertyId: caProp.id })).body.result).toBe('allow');
   });

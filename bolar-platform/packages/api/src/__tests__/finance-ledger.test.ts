@@ -43,7 +43,7 @@ describe('finance: chart of accounts and ledger posting engine', () => {
   });
 
   it('posts a balanced opening balance, rejects unbalanced entries, and is idempotent by key', async () => {
-    const b = await asUser(fx.books.a);
+    const b = await asUser(fx.admins.a); // holds finance:approve_adjustment, so a non-adjustment manual entry posts directly
     const body = { sourceType: 'opening_balance', sourceId: 'open-2026', memo: 'Opening balances', idempotencyKey: 'open-2026-key', lines: [{ accountCode: '1000', debitCents: 500000 }, { accountCode: '3000', creditCents: 500000 }] };
     const first = await b.post('/journal-entries').send(body);
     expect(first.status).toBe(201);
@@ -149,5 +149,14 @@ describe('finance: chart of accounts and ledger posting engine', () => {
     expect(entries.status).toBe(200);
     expect(entries.body.items).toHaveLength(2);
     expect(entries.body.items[0]).toMatchObject({ accountCode: '1000', sourceType: 'reversal' });
+  });
+
+  it('a bookkeeper (finance:post only) cannot label an entry opening_balance to skip dual control: it waits for approval', async () => {
+    const books = await asUser(fx.books.a);
+    const gated = await books.post('/journal-entries').send({ sourceType: 'opening_balance', sourceId: 'open-gated', memo: 'Opening balances (books)', idempotencyKey: 'open-gated-key', lines: [{ accountCode: '1000', debitCents: 700 }, { accountCode: '3000', creditCents: 700 }] });
+    expect(gated.status).toBe(201);
+    expect(gated.body).toMatchObject({ status: 'pending', postedAt: null });
+    expect((await books.post(`/journal-entries/${gated.body.id}/approve`)).status).toBe(403);
+    expect((await books.get('/ledger/proof')).body.pendingEntries).toBeGreaterThanOrEqual(1);
   });
 });

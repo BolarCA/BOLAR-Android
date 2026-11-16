@@ -3,7 +3,7 @@ import {
   z, idParams, complianceRule, complianceRulePage, ruleQuery, createRule, newRuleVersion, evaluateRulesRequest, evaluateRulesResponse, ruleEvaluation, ruleEvaluationPage, evaluationQuery, resolveEvaluation,
   jurisdictionOverride, jurisdictionOverridePage, createJurisdictionOverride, jurisdictionResolveQuery, jurisdictionResolution, screenTextRequest, screenTextResponse, paginationQuery,
 } from '@bolar/contracts';
-import { errors, toPage, decodeCursor } from '@bolar/shared';
+import { errors, type RequestContext, toPage, decodeCursor } from '@bolar/shared';
 import { defineRoute, mount, toDto } from '../../shared/route.js';
 import { prisma, tenantDb } from '../../shared/db.js';
 import { audit } from '../../shared/audit.js';
@@ -22,6 +22,15 @@ import { screenText } from './fair-housing.js';
 const ruleDto = (row: unknown) => toDto(row) as z.infer<typeof complianceRule>;
 const toDate = (v: string | null | undefined, fallback: Date | null): Date | null => (v === undefined ? fallback : v === null ? null : new Date(v));
 
+/**
+ * ComplianceRule rows are platform-global (no tenantOrgId): they bind every organization. Creating, versioning,
+ * activating and retiring them is therefore reserved to platform actors with compliance:approve; org compliance
+ * officers and lawyers read the catalog and resolve their own queue (review pass 2, finding B-2).
+ */
+function requirePlatformRuleAuthor(ctx: RequestContext): void {
+  if (!ctx.actor?.isPlatform || !ctx.permissions.has('compliance:approve')) throw errors.forbidden('Compliance rules are maintained by the platform compliance team');
+}
+
 export const complianceRoutes = [
   // ---- Rule catalog (Day 41) ----
   defineRoute({ method: 'get', path: '/rules', operationId: 'listComplianceRules', summary: 'List compliance rules (platform catalog, all versions)', tags: ['compliance'], auth: 'session', permission: 'compliance:read',
@@ -37,6 +46,7 @@ export const complianceRoutes = [
   defineRoute({ method: 'post', path: '/rules', operationId: 'createComplianceRule', summary: 'Create a rule (version 1, draft) for counsel review', tags: ['compliance'], auth: 'mfa', permission: 'compliance:approve',
     request: { body: createRule }, responses: { 201: complianceRule },
     handler: async ({ body, ctx }) => {
+      requirePlatformRuleAuthor(ctx);
       const condErrors = validateConditions(body.conditions);
       if (condErrors.length) throw errors.validation(condErrors.map((e) => ({ path: `body.${e.path}`, message: e.message })));
       if (await prisma.complianceRule.findFirst({ where: { key: body.key }, select: { id: true } })) throw errors.conflict('A rule with this key exists; create a new version instead');
@@ -99,6 +109,7 @@ export const complianceRoutes = [
   defineRoute({ method: 'post', path: '/rules/:id/new-version', operationId: 'createComplianceRuleVersion', summary: 'Copy a rule into a new draft version (bumps version)', tags: ['compliance'], auth: 'mfa', permission: 'compliance:approve',
     request: { params: idParams, body: newRuleVersion }, responses: { 201: complianceRule },
     handler: async ({ params, body, ctx }) => {
+      requirePlatformRuleAuthor(ctx);
       const base = await prisma.complianceRule.findUnique({ where: { id: params.id } });
       if (!base) throw errors.notFound();
       if (body.conditions) {
@@ -117,6 +128,7 @@ export const complianceRoutes = [
   defineRoute({ method: 'post', path: '/rules/:id/activate', operationId: 'activateComplianceRule', summary: 'Activate a draft version (approver must differ from author); retires earlier versions', tags: ['compliance'], auth: 'mfa', permission: 'compliance:approve',
     request: { params: idParams }, responses: { 200: complianceRule },
     handler: async ({ params, ctx }) => {
+      requirePlatformRuleAuthor(ctx);
       const row = await prisma.complianceRule.findUnique({ where: { id: params.id } });
       if (!row) throw errors.notFound();
       if (row.status !== 'draft') throw errors.conflict(`Rule version is ${row.status}`);
@@ -131,6 +143,7 @@ export const complianceRoutes = [
   defineRoute({ method: 'post', path: '/rules/:id/retire', operationId: 'retireComplianceRule', summary: 'Retire a rule version', tags: ['compliance'], auth: 'mfa', permission: 'compliance:approve',
     request: { params: idParams }, responses: { 200: complianceRule },
     handler: async ({ params, ctx }) => {
+      requirePlatformRuleAuthor(ctx);
       const row = await prisma.complianceRule.findUnique({ where: { id: params.id } });
       if (!row) throw errors.notFound();
       if (row.status === 'retired') throw errors.conflict('Rule version is already retired');

@@ -43,6 +43,18 @@ describe('tenant profiles: CRUD, sensitive field classification, self-service re
     expect(none.body.items).toHaveLength(0);
   });
 
+  it('a manager cannot link a profile to their own login to read restricted fields as "self"', async () => {
+    const m = await asUser(fx.managers.a);
+    const self = await m.patch(`/tenant-profiles/${profileId}`).send({ userId: fx.managers.a.id });
+    expect(self.status).toBe(403);
+    expect((await m.get(`/tenant-profiles/${profileId}/sensitive`)).status).toBe(403);
+    const a = await asUser(fx.admins.a);
+    expect((await a.patch(`/tenant-profiles/${profileId}`).send({ userId: fx.admins.a.id })).status).toBe(403);
+    // nor to any login that holds a staff role (a colleague)
+    expect((await a.patch(`/tenant-profiles/${profileId}`).send({ userId: fx.managers.a.id })).status).toBe(409);
+    expect((await prisma.tenantProfile.findUniqueOrThrow({ where: { id: profileId } })).userId).toBeNull();
+  });
+
   it('read_sensitive permission + declared purpose clears the record and is audited', async () => {
     const admin = await asUser(fx.admins.a, { 'X-Access-Purpose': 'lease_administration' });
     const res = await admin.get(`/tenant-profiles/${profileId}`);

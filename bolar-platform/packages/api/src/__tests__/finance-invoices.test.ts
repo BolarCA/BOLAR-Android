@@ -117,6 +117,8 @@ describe('finance: invoices and rent schedules', () => {
     expect((await t.post('/invoices/generate').send({ period })).status).toBe(403);
     const s = await asUser(fx.strangerTenant);
     expect((await s.get('/invoices')).body.items).toHaveLength(0);
+    expect((await s.get('/invoices?overdue=true')).body.items).toHaveLength(0);
+    expect((await t.get('/invoices?overdue=true')).body.items.every((i: { leaseId: string }) => i.leaseId === fx.leaseA.lease.id)).toBe(true);
     expect((await s.get(`/invoices/${mine.body.items[0].id}`)).status).toBe(404);
     expect(await prisma.auditLog.count({ where: { actorId: fx.strangerTenant.id, action: 'access.denied', resourceType: 'invoice' } })).toBe(1);
     const l = await asUser(fx.landlord);

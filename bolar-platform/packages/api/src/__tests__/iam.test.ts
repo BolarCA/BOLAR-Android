@@ -49,6 +49,16 @@ describe('iam: invitations, roles, relationships, access check (Days 11-13)', ()
     expect(await prisma.auditLog.count({ where: { action: 'invitation.accept_refused' } })).toBeGreaterThanOrEqual(1);
   });
 
+  it('a manager can invite tenants and vendors but not staff roles (needs role:assign)', async () => {
+    const m = await asUser(fx.managers.a);
+    expect((await m.post('/invitations').send({ email: 'newtenant@alpha.test', role: 'tenant' })).status).toBe(201);
+    for (const role of ['lawyer', 'compliance_officer', 'bookkeeper', 'subaccount_admin', 'property_manager']) {
+      const res = await m.post('/invitations').send({ email: `${role}@alpha.test`, role });
+      expect(res.status).toBe(403);
+    }
+    expect(await prisma.auditLog.count({ where: { action: 'access.denied', resourceType: 'invitation', actorId: fx.managers.a.id } })).toBeGreaterThanOrEqual(5);
+  });
+
   it('tenant role cannot invite or read users (denied path)', async () => {
     const tenant = await createUser(fx.a, 'tenant');
     const t = await asUser(tenant);

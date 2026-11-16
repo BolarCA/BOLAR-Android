@@ -123,11 +123,26 @@ export const tenantProfileRoutes = [
     handler: async ({ params, body, ctx }) => {
       const row = await loadProfile(ctx, params.id, 'tenant_profile:write');
       const db = tenantDb(ctx);
-      if (body.userId) {
-        const u = await db.userProfile.findFirst({ where: { id: body.userId }, select: { id: true } });
-        if (!u) throw errors.validation([{ path: 'body.userId', message: 'Unknown user' }]);
-        const taken = await db.tenantProfile.findFirst({ where: { userId: body.userId, id: { not: row.id } }, select: { id: true } });
-        if (taken) throw errors.conflict('This user already has a tenant profile');
+      if (body.userId !== undefined && body.userId !== row.userId) {
+        // Linking a portal login to a profile makes that login "self" for the restricted fields (DOB, SSN last 4,
+        // contact details). It is never allowed towards the caller's own account, and only logins that hold nothing
+        // but tenant/occupant roles can be linked, so staff cannot grant themselves or a colleague "self" access
+        // (review pass 2, finding A-1).
+        if (body.userId === ctx.actor!.userId) {
+          await audit(ctx, { action: 'access.denied', resourceType: RESOURCE, resourceId: row.id, outcome: 'deny', metadata: { permission: 'tenant_profile:write', reason: 'cannot link own account to a tenant profile' } });
+          throw errors.forbidden('You cannot link your own account to a tenant profile');
+        }
+        if (body.userId) {
+          const u = await db.userProfile.findFirst({ where: { id: body.userId }, select: { id: true, isPlatform: true, roles: { where: { revokedAt: null }, select: { role: true } } } });
+          if (!u) throw errors.validation([{ path: 'body.userId', message: 'Unknown user' }]);
+          if (u.isPlatform || u.roles.some((r) => r.role !== 'tenant' && r.role !== 'occupant')) {
+            await audit(ctx, { action: 'access.denied', resourceType: RESOURCE, resourceId: row.id, outcome: 'deny', metadata: { permission: 'tenant_profile:write', reason: 'linked login holds staff roles', userId: u.id } });
+            throw errors.conflict('Only logins that hold just tenant or occupant roles can be linked to a tenant profile');
+          }
+          const taken = await db.tenantProfile.findFirst({ where: { userId: body.userId, id: { not: row.id } }, select: { id: true } });
+          if (taken) throw errors.conflict('This user already has a tenant profile');
+        }
+        await audit(ctx, { action: 'tenant_profile.link_user', resourceType: RESOURCE, resourceId: row.id, before: { userId: row.userId }, after: { userId: body.userId } });
       }
       const { dateOfBirth, ...rest } = body;
       const data: Prisma.TenantProfileUpdateInput = { ...rest, ...(dateOfBirth !== undefined ? { dateOfBirth: dateOfBirth ? parseDate(dateOfBirth) : null } : {}) };

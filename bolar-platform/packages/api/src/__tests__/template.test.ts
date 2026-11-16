@@ -72,6 +72,17 @@ describe('templates (Day 29): registry, approval workflow, rendering', () => {
     expect((await b.post('/templates/invite.staff/render').send({ variables: { orgName: 'Beta', name: 'S', acceptUrl: 'u' } })).body.subject).toBe('You are invited to Beta');
   });
 
+  it('notice/adverse/privacy/lease keys are high risk even when the author asks for low; submit does not auto-approve', async () => {
+    const m = await asUser(fx.managers.a);
+    const created = await m.post('/templates').send({ key: 'notice.entry', channel: 'notice', name: 'Entry notice', riskLevel: 'low', body: 'We will enter {{unit}} on {{date}}.' });
+    expect(created.status).toBe(201);
+    expect(created.body.riskLevel).toBe('high');
+    const v1 = created.body.versions[0].id as string;
+    const submitted = await m.post(`/templates/${created.body.id}/versions/${v1}/submit`);
+    expect(submitted.status).toBe(200);
+    expect(submitted.body.versions[0].status).toBe('pending_approval');
+  });
+
   it('high-risk template needs a second-person approval; author cannot approve; new approval retires the old version; reject path', async () => {
     const m = await asUser(fx.managers.a);
     const created = await m.post('/templates').send({ key: 'notice.late_rent', channel: 'notice', name: 'Late rent (TX)', riskLevel: 'high', jurisdiction: 'US-TX', subject: 'Notice of late rent', body: 'Dear {{tenantName}}, rent of {{amount}} is late. {{jurisdictionClause}}', variables: ['tenantName', 'amount', 'jurisdictionClause'] });

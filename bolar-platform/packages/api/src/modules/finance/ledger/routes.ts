@@ -33,11 +33,15 @@ export const ledgerRoutes: RouteDef[] = [
     request: { body: createJournalEntry }, responses: { 201: journalEntry },
     handler: async ({ body, ctx }) => {
       await requireFinanceStaff(ctx, 'finance:post');
+      // Dual control (p300): the requester's own labelling never decides whether a manual entry posts. Adjustments
+      // always wait for a second approver, and so does every manual entry from someone who could not approve one
+      // (review pass 2, finding B-3).
       const isAdjustment = body.sourceType === 'adjustment' || /adjust|write[- ]?off/i.test(body.memo);
+      const canApprove = ctx.permissions.has('finance:approve_adjustment');
       const { entry } = await postJournal(ctx, {
         sourceType: isAdjustment ? 'adjustment' : body.sourceType, sourceId: body.sourceId, memo: body.memo,
         idempotencyKey: body.idempotencyKey ?? `manual:${ctx.actor!.userId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
-        lines: body.lines, post: !isAdjustment,
+        lines: body.lines, post: !isAdjustment && canApprove,
       });
       return { status: 201, body: entry };
     } }),

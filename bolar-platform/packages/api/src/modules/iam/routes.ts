@@ -32,6 +32,8 @@ async function userWithRoles(ctx: { tenantOrgId: string | null }, id: string) {
   return { ...toDto(u), roles: u.roles.map((r) => ({ role: r.role, scopeType: r.scopeType, scopeId: r.scopeId })) };
 }
 
+const INVITABLE_WITHOUT_ROLE_ASSIGN: ReadonlySet<Role> = new Set<Role>(['tenant', 'occupant', 'vendor']);
+
 async function validateScope(ctx: { tenantOrgId: string | null }, role: Role, scopeType: ScopeType, scopeId: string | undefined): Promise<string | null> {
   if (!ROLE_SCOPES[role].includes(scopeType)) throw errors.validation([{ path: 'body.scopeType', message: `${role} cannot be scoped to ${scopeType}` }]);
   if (scopeType === 'platform') throw errors.forbidden('Platform roles are managed out of band');
@@ -86,7 +88,12 @@ export const iamRoutes = [
     request: { body: createInvitation }, responses: { 201: createInvitationResponse },
     handler: async ({ body, ctx }) => {
       if (!isRole(body.role)) throw errors.validation([{ path: 'body.role', message: 'Unknown role' }]);
-      if (body.role === 'org_admin' && !ctx.permissions.has('role:assign')) throw errors.forbidden();
+      // user:invite alone covers the customer-facing roles; staff roles (admins, lawyers, bookkeepers, compliance,
+      // managers, landlords, ...) need role:assign so a manager cannot invite themselves into a privileged role.
+      if (!INVITABLE_WITHOUT_ROLE_ASSIGN.has(body.role) && !ctx.permissions.has('role:assign')) {
+        await audit(ctx, { action: 'access.denied', resourceType: 'invitation', outcome: 'deny', metadata: { permission: 'role:assign', role: body.role, reason: 'staff role invitation needs role:assign' } });
+        throw errors.forbidden('Inviting this role requires role:assign');
+      }
       const scopeId = await validateScope(ctx, body.role, body.scopeType, body.scopeId);
       const dup = await prisma.invitation.findFirst({ where: { tenantOrgId: ctx.tenantOrgId!, email: body.email, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } } });
       if (dup) throw errors.conflict('An active invitation already exists for this email');
