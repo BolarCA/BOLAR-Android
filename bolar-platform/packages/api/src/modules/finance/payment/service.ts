@@ -63,18 +63,29 @@ export async function createPayment(ctx: RequestContext, input: CreatePaymentInp
   return (await db.payment.findFirst({ where: { id: payment.id }, include: paymentInclude }))!;
 }
 
-/** Idempotent: a payment already `succeeded` is left alone (one allocation, one journal entry). */
+/**
+ * Idempotent and race-safe: the pending -> succeeded transition and the invoice allocation happen in one transaction
+ * whose first statement claims the payment row (`updateMany ... WHERE status = 'pending'`). The synchronous provider
+ * result and the provider webhook can both call this; only the one that wins the claim allocates, the other skips.
+ */
 export async function applyPaymentSuccess(ctx: RequestContext, paymentId: string): Promise<'applied' | 'skipped'> {
+  const tenantOrgId = ctx.tenantOrgId!;
   const db = tenantDb(ctx);
   const p = await db.payment.findFirst({ where: { id: paymentId }, include: paymentInclude });
   if (!p) throw errors.notFound();
-  if (p.status === 'succeeded' || p.status === 'refunded') return 'skipped';
-  const inv = await db.invoice.findFirst({ where: { id: p.invoiceId }, include: invoiceInclude });
-  if (!inv) throw errors.notFound();
-  const paidCents = inv.paidCents + p.amountCents;
-  const status = allocationStatus(inv.totalCents, paidCents, inv.dueDate);
-  await db.invoice.update({ where: { id: inv.id }, data: { paidCents, status: status === 'overdue' ? inv.status : status } });
-  await db.payment.update({ where: { id: p.id }, data: { status: 'succeeded', receivedAt: new Date(), failureReason: null } });
+  if (p.status !== 'pending') return 'skipped';
+  const applied = await prisma.$transaction(async (tx) => {
+    const claimed = await tx.payment.updateMany({ where: { id: p.id, tenantOrgId, status: 'pending' }, data: { status: 'succeeded', receivedAt: new Date(), failureReason: null } });
+    if (claimed.count === 0) return null;
+    const inv = await tx.invoice.findFirst({ where: { id: p.invoiceId, tenantOrgId }, include: invoiceInclude });
+    if (!inv) throw errors.notFound();
+    const paidCents = inv.paidCents + p.amountCents;
+    const status = allocationStatus(inv.totalCents, paidCents, inv.dueDate);
+    await tx.invoice.update({ where: { id: inv.id }, data: { paidCents, status: status === 'overdue' ? inv.status : status } });
+    return { inv, paidCents, status };
+  });
+  if (!applied) return 'skipped';
+  const { inv, paidCents, status } = applied;
   await postJournal(ctx, {
     sourceType: 'payment', sourceId: p.id, memo: `Payment ${p.id} on ${inv.number}`, idempotencyKey: `payment:${p.id}:succeeded`,
     lines: [{ accountCode: ACCOUNTS.CASH, debitCents: p.amountCents, propertyId: inv.lease.propertyId, memo: inv.number }, { accountCode: ACCOUNTS.AR, creditCents: p.amountCents, propertyId: inv.lease.propertyId, memo: inv.number }],
@@ -89,7 +100,8 @@ export async function applyPaymentFailure(ctx: RequestContext, paymentId: string
   const p = await db.payment.findFirst({ where: { id: paymentId }, include: paymentInclude });
   if (!p) throw errors.notFound();
   if (p.status !== 'pending') return 'skipped';
-  await db.payment.update({ where: { id: p.id }, data: { status: 'failed', failureReason: reason } });
+  const claimed = await prisma.payment.updateMany({ where: { id: p.id, tenantOrgId: ctx.tenantOrgId!, status: 'pending' }, data: { status: 'failed', failureReason: reason } });
+  if (claimed.count === 0) return 'skipped';
   await audit(ctx, { action: 'payment.failed', resourceType: 'payment', resourceId: p.id, outcome: 'error', after: { reason, amountCents: p.amountCents } });
   await publish(ctx, 'payment.failed', { paymentId: p.id, invoiceId: p.invoiceId, invoiceNumber: p.invoice.number, leaseId: p.invoice.leaseId, amountCents: p.amountCents, reason });
   return 'applied';

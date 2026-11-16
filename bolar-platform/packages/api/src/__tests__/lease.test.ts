@@ -95,6 +95,22 @@ describe('leases: draft model, overlap, lifecycle state machine, permissions (Da
     expect((await go(m, adjacent.body.id, 'canceled')).status).toBe(200);
   });
 
+  it('concurrent approvals of two overlapping leases on one unit: exactly one succeeds', async () => {
+    const x = await draft(m, { unitId: unitB.id, startDate: '2033-01-01', endDate: '2033-12-31' });
+    const y = await draft(m, { unitId: unitB.id, startDate: '2033-06-01', endDate: '2034-05-31' });
+    expect([x.status, y.status]).toEqual([201, 201]);
+    expect((await go(m, x.body.id, 'review')).status).toBe(200);
+    expect((await go(m, y.body.id, 'review')).status).toBe(200);
+    const [rx, ry] = await Promise.all([go(l, x.body.id, 'approved'), go(l, y.body.id, 'approved')]);
+    expect([rx.status, ry.status].sort()).toEqual([200, 409]);
+    expect(await prisma.lease.count({ where: { unitId: unitB.id, status: 'approved' } })).toBe(1);
+    for (const id of [x.body.id, y.body.id]) {
+      const row = await prisma.lease.findUniqueOrThrow({ where: { id } });
+      if (row.status === 'approved') await go(m, id, 'canceled');
+      else { await go(m, id, 'draft', { note: 'Unit double-booked; re-plan dates.' }); await go(m, id, 'canceled'); }
+    }
+  });
+
   it('runs the full lifecycle with actor rules, required artifacts, occupancy side effects and audit/events', async () => {
     const lease = (await m.get('/leases?status=approved')).body.items[0];
     drainMemoryQueue();

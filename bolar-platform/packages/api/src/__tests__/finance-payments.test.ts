@@ -3,6 +3,8 @@ import request from 'supertest';
 import { prisma } from '@bolar/db';
 import { MockPaymentProvider } from '@bolar/integrations';
 import { drainMemoryQueue } from '../shared/queue.js';
+import { systemContext } from '@bolar/shared';
+import { applyPaymentSuccess } from '../modules/finance/payment/service.js';
 import { asUser, testApp } from './helpers.js';
 import { financeFixture, monthStart, periodOf } from './finance.fixture.js';
 
@@ -107,15 +109,30 @@ describe('finance: payments, webhooks, refunds and bank links', () => {
     expect((await prisma.payment.findUniqueOrThrow({ where: { id: pending.body.id } })).status).toBe('succeeded');
   });
 
+  it('concurrent success application (sync result racing the webhook) allocates to the invoice exactly once', async () => {
+    const t = await asUser(fx.tenants.a);
+    const pending = await t.post('/payments').set('Idempotency-Key', 'tenant-pay-pend-race-01').send({ invoiceId, amountCents: 10098, method: 'ach', paymentMethodRef: 'ba_mock_checking' });
+    expect(pending.body.status).toBe('pending');
+    const before = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const ctx = systemContext(fx.a.id, 'race-test');
+    const results = await Promise.all([applyPaymentSuccess(ctx, pending.body.id), applyPaymentSuccess(ctx, pending.body.id), applyPaymentSuccess(ctx, pending.body.id)]);
+    expect(results.filter((r) => r === 'applied')).toHaveLength(1);
+    const after = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    expect(after.paidCents).toBe(before.paidCents + 10098);
+    expect(await prisma.journalEntry.count({ where: { sourceType: 'payment', sourceId: pending.body.id } })).toBe(1);
+  });
+
   it('refund is approval-gated: bookkeeper denied, recorder cannot approve own, approver reverses the journal and reopens the invoice', async () => {
     const b = await asUser(fx.books.a);
     const admin = await asUser(fx.admins.a);
     // staff-recorded payment that pays the invoice off
-    const staffPay = await admin.post('/payments').set('Idempotency-Key', 'staff-pay-0001-abc').send({ invoiceId, amountCents: 79902, method: 'check', paymentMethodRef: 'check-1042' });
+    const open = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const remaining = open.totalCents - open.paidCents;
+    const staffPay = await admin.post('/payments').set('Idempotency-Key', 'staff-pay-0001-abc').send({ invoiceId, amountCents: remaining, method: 'check', paymentMethodRef: 'check-1042' });
     expect(staffPay.status).toBe(201);
     expect(staffPay.body.invoice.status).toBe('paid');
-    expect((await b.post(`/payments/${staffPay.body.id}/refund`).send({ amountCents: 79902, reason: 'duplicate check' })).status).toBe(403);
-    expect((await admin.post(`/payments/${staffPay.body.id}/refund`).send({ amountCents: 79902, reason: 'duplicate check' })).status).toBe(409);
+    expect((await b.post(`/payments/${staffPay.body.id}/refund`).send({ amountCents: remaining, reason: 'duplicate check' })).status).toBe(403);
+    expect((await admin.post(`/payments/${staffPay.body.id}/refund`).send({ amountCents: remaining, reason: 'duplicate check' })).status).toBe(409);
     // admin refunds the tenant's card payment (recorded by the tenant)
     const tenantPay = await prisma.payment.findFirstOrThrow({ where: { invoiceId, status: 'succeeded', amountCents: 50000 } });
     expect((await admin.post(`/payments/${tenantPay.id}/refund`).send({ amountCents: 60000, reason: 'too much' })).status).toBe(400);

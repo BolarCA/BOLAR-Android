@@ -222,7 +222,19 @@ export async function transitionLease(ctx: RequestContext, row: LeaseRow, to: Le
 
   const db = tenantDb(ctx);
   const now = new Date();
-  await db.lease.update({ where: { id: row.id }, data: { status: to } });
+  if (to === 'approved' || to === 'active') {
+    // Two concurrent approvals for the same unit must not both pass the overlap guard: lock the unit row and
+    // re-check inside the transaction that writes the new status (Day 22 overlap rule, review finding 12).
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Unit" WHERE id = ${row.unitId} AND "tenantOrgId" = ${ctx.tenantOrgId!} FOR UPDATE`;
+      const overlaps = await tx.lease.count({ where: { tenantOrgId: ctx.tenantOrgId!, unitId: row.unitId, status: { in: [...LEASE_OCCUPYING_STATES] }, id: { not: row.id }, startDate: { lte: row.endDate }, endDate: { gte: row.startDate } } });
+      if (overlaps > 0) throw errors.conflict(`Another lease occupies this unit for ${row.startDate.toISOString().slice(0, 10)} to ${row.endDate.toISOString().slice(0, 10)}`);
+      const updated = await tx.lease.updateMany({ where: { id: row.id, tenantOrgId: ctx.tenantOrgId!, status: from }, data: { status: to } });
+      if (updated.count === 0) throw errors.invalidTransition(from, to);
+    });
+  } else {
+    await db.lease.update({ where: { id: row.id }, data: { status: to } });
+  }
   if (to === 'review') await evaluateLeaseCompliance(ctx, row);
   if (to === 'signed') {
     const signedAt = opts.signedAt ? new Date(opts.signedAt) : now;

@@ -2,7 +2,7 @@ import type { Request, Response, Router, NextFunction } from 'express';
 import type { ZodTypeAny, z } from 'zod';
 import './zod.js';
 import { createHash } from 'node:crypto';
-import { errors, type Permission, type RequestContext } from '@bolar/shared';
+import { AppError, errors, type Permission, type RequestContext } from '@bolar/shared';
 import { requireAuth } from './context.js';
 import { requirePermission } from './access.js';
 import { prisma } from './db.js';
@@ -47,6 +47,39 @@ function parse<T extends ZodTypeAny>(schema: T | undefined, value: unknown, wher
 }
 
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+/** How long a claimed-but-unfinished key blocks a concurrent duplicate before it is treated as abandoned. */
+const IDEMPOTENCY_IN_FLIGHT_MS = 2 * 60 * 1000;
+
+type IdemWhere = { scope_tenantOrgId_key: { scope: string; tenantOrgId: string; key: string } };
+
+/**
+ * Claim the key for this request. Returns the stored response when an identical request already completed, null when
+ * the caller now owns the key and must run the handler. Throws idempotency_conflict for a different payload under the
+ * same key, and `idempotency_in_progress` (409) while another request with the same key is still running.
+ */
+async function claimIdempotencyKey(where: IdemWhere, requestHash: string): Promise<{ responseCode: number; responseBody: unknown } | null> {
+  const now = new Date();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const existing = await prisma.idempotencyKey.findUnique({ where });
+    if (existing) {
+      const stale = existing.responseCode === null ? existing.createdAt.getTime() < now.getTime() - IDEMPOTENCY_IN_FLIGHT_MS : existing.expiresAt <= now;
+      if (!stale) {
+        if (existing.requestHash !== requestHash) throw errors.idempotencyConflict();
+        if (existing.responseCode !== null) return { responseCode: existing.responseCode, responseBody: existing.responseBody };
+        throw new AppError('idempotency_in_progress', 'A request with this Idempotency-Key is still being processed', 409);
+      }
+      await prisma.idempotencyKey.deleteMany({ where: { id: existing.id } });
+    }
+    try {
+      await prisma.idempotencyKey.create({ data: { ...where.scope_tenantOrgId_key, requestHash, responseCode: null, responseBody: undefined, createdAt: now, expiresAt: new Date(now.getTime() + IDEMPOTENCY_TTL_MS) } });
+      return null;
+    } catch (err) {
+      // Lost the race to a concurrent request with the same key: loop once to read its row.
+      if ((err as { code?: string }).code !== 'P2002') throw err;
+    }
+  }
+  throw new AppError('idempotency_in_progress', 'A request with this Idempotency-Key is still being processed', 409);
+}
 
 export function mount(router: Router, defs: RouteDef[]): void {
   for (const def of defs) {
@@ -59,31 +92,36 @@ export function mount(router: Router, defs: RouteDef[]): void {
         const query = parse(def.request?.query, req.query, 'query');
         const body = parse(def.request?.body, req.body, 'body');
 
-        let idemKey: string | null = null;
-        let requestHash = '';
+        // Idempotency (p23). The key is scoped to (operation, tenant, actor) so one user's stored response can never
+        // be replayed to another, and a row is claimed *before* the handler runs so two concurrent requests with the
+        // same key cannot both execute: the loser sees the in-flight row and answers 409 until the winner finishes.
+        let idem: { where: { scope_tenantOrgId_key: { scope: string; tenantOrgId: string; key: string } }; requestHash: string } | null = null;
         if (def.idempotent) {
-          idemKey = req.header('idempotency-key') ?? null;
+          const idemKey = req.header('idempotency-key') ?? null;
           if (!idemKey || idemKey.length < 8 || idemKey.length > 128) throw errors.validation([{ path: 'headers.Idempotency-Key', message: 'Idempotency-Key header (8-128 chars) is required' }]);
-          requestHash = createHash('sha256').update(JSON.stringify({ params, query, body })).digest('hex');
-          const existing = await prisma.idempotencyKey.findUnique({ where: { scope_tenantOrgId_key: { scope: def.operationId, tenantOrgId: ctx.tenantOrgId ?? '', key: idemKey } } });
-          if (existing && existing.expiresAt > new Date()) {
-            if (existing.requestHash !== requestHash) throw errors.idempotencyConflict();
-            if (existing.responseCode) {
-              res.setHeader('Idempotent-Replayed', 'true');
-              res.status(existing.responseCode).json(existing.responseBody);
-              return;
-            }
+          const requestHash = createHash('sha256').update(JSON.stringify({ params, query, body })).digest('hex');
+          const scope = `${def.operationId}:${ctx.actor?.userId ?? 'anon'}`;
+          const where = { scope_tenantOrgId_key: { scope, tenantOrgId: ctx.tenantOrgId ?? '', key: idemKey } };
+          idem = { where, requestHash };
+          const replay = await claimIdempotencyKey(where, requestHash);
+          if (replay) {
+            res.setHeader('Idempotent-Replayed', 'true');
+            res.status(replay.responseCode).json(replay.responseBody);
+            return;
           }
         }
 
-        const result = (await def.handler({ params, query, body, ctx, req, res })) ?? {};
+        let result: { status?: number; body?: unknown };
+        try {
+          result = (await def.handler({ params, query, body, ctx, req, res })) ?? {};
+        } catch (err) {
+          // Release the claim so the client can retry the same key after a failure.
+          if (idem) await prisma.idempotencyKey.deleteMany({ where: { ...idem.where.scope_tenantOrgId_key, responseCode: null } }).catch(() => undefined);
+          throw err;
+        }
         const status = result.status ?? (def.method === 'post' ? 201 : 200);
-        if (idemKey) {
-          await prisma.idempotencyKey.upsert({
-            where: { scope_tenantOrgId_key: { scope: def.operationId, tenantOrgId: ctx.tenantOrgId ?? '', key: idemKey } },
-            update: { responseCode: status, responseBody: (result.body ?? null) as never, requestHash, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) },
-            create: { scope: def.operationId, tenantOrgId: ctx.tenantOrgId ?? '', key: idemKey, requestHash, responseCode: status, responseBody: (result.body ?? null) as never, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) },
-          });
+        if (idem) {
+          await prisma.idempotencyKey.update({ where: idem.where, data: { responseCode: status, responseBody: (result.body ?? null) as never, expiresAt: new Date(Date.now() + IDEMPOTENCY_TTL_MS) } });
         }
         if (result.body === undefined) res.status(status === 201 ? 204 : status).end();
         else res.status(status).json(result.body);
