@@ -11,6 +11,7 @@
  *
  * Policies (all per minute):
  *   login            10 per IP + 5 per e-mail hash, one generic message so account existence is not leaked
+ *   mfa verify       10 per IP (plus the per-account lockout after repeated wrong codes)
  *   public intake    60 per IP for /privacy-requests/intake, /invitations/accept and /webhooks/:provider (per provider)
  *   authenticated    600 per actor, keyed (tenantOrgId, userId) so one tenant's burst never consumes another's budget
  *   platform_admin   exempt
@@ -250,6 +251,11 @@ export function policiesFor(input: { method: string; path: string; ip: string | 
     out.push({ name: 'login_ip', key: `login:ip:${ip}`, limit: limits.RATE_LIMIT_LOGIN_PER_IP, windowMs: RATE_LIMIT_WINDOW_MS });
     const email = (input.body as { email?: unknown } | null)?.email;
     if (typeof email === 'string' && email.length > 0) out.push({ name: 'login_email', key: `login:email:${hashKeyPart(email)}`, limit: limits.RATE_LIMIT_LOGIN_PER_EMAIL, windowMs: RATE_LIMIT_WINDOW_MS });
+    return out;
+  }
+  if (method === 'POST' && path === '/auth/mfa/verify') {
+    // Code guessing is bounded per IP like login attempts (the account lockout bounds it per user).
+    out.push({ name: 'mfa_ip', key: `mfa:ip:${ip}`, limit: limits.RATE_LIMIT_LOGIN_PER_IP, windowMs: RATE_LIMIT_WINDOW_MS });
     return out;
   }
   for (const rule of PUBLIC_INTAKE) {

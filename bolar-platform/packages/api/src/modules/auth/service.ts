@@ -12,6 +12,20 @@ const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 const GENERIC = 'Invalid email, password, or organization';
 
+export function isLocked(user: { lockedUntil: Date | null }, now = new Date()): boolean {
+  return !!user.lockedUntil && user.lockedUntil > now;
+}
+
+/**
+ * Count a failed password or MFA attempt. Attempts made while the account is already locked are ignored, so a
+ * stream of bad attempts cannot keep extending the lock and deny the real user indefinitely.
+ */
+async function recordFailedAttempt(user: { id: string; failedLogins: number; lockedUntil: Date | null }): Promise<void> {
+  if (isLocked(user)) return;
+  const failed = user.failedLogins + 1;
+  await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: failed, lockedUntil: failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MINUTES * 60_000) : null } });
+}
+
 export interface IssuedTokens { accessToken: string; refreshToken: string; expiresIn: number; tokenType: 'Bearer'; mfaRequired: boolean }
 
 async function issueTokens(user: { id: string; tenantOrgId: string; isPlatform: boolean; mfaEnabled: boolean }, ctx: RequestContext, mfaVerified: boolean, existingSessionId?: string): Promise<{ tokens: IssuedTokens; sessionId: string }> {
@@ -41,16 +55,13 @@ export async function login(ctx: RequestContext, input: { email: string; passwor
   }
   const user = candidates[0];
   const fail = async (reason: string) => {
-    if (user) {
-      const failed = user.failedLogins + 1;
-      await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: failed, lockedUntil: failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MINUTES * 60_000) : null } });
-    }
+    if (user) await recordFailedAttempt(user);
     await audit(ctx, { action: 'auth.login_failed', resourceType: 'session', outcome: 'deny', tenantOrgId: user?.tenantOrgId ?? null, metadata: { reason, userId: user?.id ?? null } });
     logger.info({ requestId: ctx.requestId, reason }, 'login failed');
     throw errors.unauthenticated(GENERIC);
   };
   if (!user || user.tenantOrg.status !== 'active') return fail(user ? 'org_inactive' : 'unknown_user');
-  if (user.lockedUntil && user.lockedUntil > new Date()) return fail('locked');
+  if (isLocked(user)) return fail('locked');
   if (!(await verifyPassword(input.password, user.passwordHash))) return fail('bad_password');
 
   await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() } });
@@ -82,10 +93,20 @@ export async function logout(ctx: RequestContext, refreshToken?: string) {
   if (ctx.actor) await audit(ctx, { action: 'auth.logout', resourceType: 'session' });
 }
 
+/**
+ * Start (or restart) TOTP enrollment. Re-enrolling an account that already has MFA enabled replaces the authenticator,
+ * so it is only allowed from a session that has itself passed MFA; a stolen pre-MFA token cannot swap the secret.
+ */
 export async function mfaSetup(ctx: RequestContext) {
   if (!ctx.actor) throw errors.unauthenticated();
+  const user = await prisma.userProfile.findUniqueOrThrow({ where: { id: ctx.actor.userId }, select: { mfaEnabled: true } });
+  if (user.mfaEnabled && !ctx.actor.mfaVerified) {
+    await audit(ctx, { action: 'auth.mfa_setup_denied', resourceType: 'user', resourceId: ctx.actor.userId, outcome: 'deny', metadata: { reason: 'step_up_required' } });
+    throw errors.forbidden('Multi-factor verification required before changing the authenticator');
+  }
   const secret = generateTotpSecret();
   await prisma.userProfile.update({ where: { id: ctx.actor.userId }, data: { mfaSecret: secret } });
+  await audit(ctx, { action: 'auth.mfa_setup', resourceType: 'user', resourceId: ctx.actor.userId, metadata: { reEnroll: user.mfaEnabled } });
   return { secret, otpauthUrl: otpauthUrl(secret, ctx.actor.email) };
 }
 
@@ -93,11 +114,18 @@ export async function mfaSetup(ctx: RequestContext) {
 export async function mfaVerify(ctx: RequestContext, sessionId: string, code: string) {
   if (!ctx.actor) throw errors.unauthenticated();
   const user = await prisma.userProfile.findUniqueOrThrow({ where: { id: ctx.actor.userId } });
-  if (!user.mfaSecret || !verifyTotp(user.mfaSecret, code)) {
-    await audit(ctx, { action: 'auth.mfa_failed', resourceType: 'session', resourceId: sessionId, outcome: 'deny' });
+  // Wrong codes count against the same lockout as passwords (MAX_FAILED, LOCK_MINUTES); a locked account answers with
+  // the same message so the caller learns nothing beyond "not verified".
+  if (isLocked(user)) {
+    await audit(ctx, { action: 'auth.mfa_failed', resourceType: 'session', resourceId: sessionId, outcome: 'deny', metadata: { reason: 'locked' } });
     throw errors.forbidden('Invalid verification code');
   }
-  if (!user.mfaEnabled) await prisma.userProfile.update({ where: { id: user.id }, data: { mfaEnabled: true } });
+  if (!user.mfaSecret || !verifyTotp(user.mfaSecret, code)) {
+    await recordFailedAttempt(user);
+    await audit(ctx, { action: 'auth.mfa_failed', resourceType: 'session', resourceId: sessionId, outcome: 'deny', metadata: { reason: 'bad_code' } });
+    throw errors.forbidden('Invalid verification code');
+  }
+  await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, ...(user.mfaEnabled ? {} : { mfaEnabled: true }) } });
   await prisma.session.update({ where: { id: sessionId }, data: { mfaVerified: true } });
   const { tokens } = await issueTokens({ ...user, mfaEnabled: true }, ctx, true, sessionId);
   await audit(ctx, { action: 'auth.mfa_verified', resourceType: 'session', resourceId: sessionId });

@@ -158,6 +158,7 @@ describe('rate limits (sliding window, per IP / e-mail / actor, platform exempt)
     expect(policiesFor({ method: 'POST', path: '/auth/login', ip: '1.2.3.4', body: { email: 'A@x.test' }, ctx: anon }, cfg).map((p) => p.name)).toEqual(['login_ip', 'login_email']);
     expect(policiesFor({ method: 'POST', path: '/auth/login', ip: '1.2.3.4', body: { email: 'a@x.test' }, ctx: anon }, cfg)[1]!.key).toBe(policiesFor({ method: 'POST', path: '/auth/login', ip: '9.9.9.9', body: { email: ' A@X.TEST ' }, ctx: anon }, cfg)[1]!.key);
     expect(policiesFor({ method: 'POST', path: '/webhooks/stripe/', ip: '1.2.3.4', body: null, ctx: anon }, cfg)[0]!.key).toBe('public:webhook:stripe:ip:1.2.3.4');
+    expect(policiesFor({ method: 'POST', path: '/auth/mfa/verify', ip: '1.2.3.4', body: { code: '123456' }, ctx: asActor }, cfg).map((p) => `${p.name}:${p.limit}`)).toEqual(['mfa_ip:10']);
     expect(policiesFor({ method: 'GET', path: '/properties', ip: '1.2.3.4', body: null, ctx: anon }, cfg)).toEqual([]);
     expect(policiesFor({ method: 'GET', path: '/properties', ip: '1.2.3.4', body: null, ctx: asActor }, cfg)[0]!.key).toBe('actor:org1:u1');
     expect(policiesFor({ method: 'GET', path: '/properties', ip: '127.0.0.1', body: null, ctx: asActor }, cfg)).toEqual([]);

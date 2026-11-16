@@ -102,6 +102,43 @@ describe('auth (Day 9)', () => {
     expect((await authed(verified.body.accessToken).get('/audit')).status).toBe(200);
   });
 
+  it('MFA: re-enrollment needs an MFA-verified session; wrong codes lock the account; locks are not extended', async () => {
+    const victim = await createUser(fx.a, 'tenant', 'mfa-lock@alpha.test');
+    const t = await loginAs(victim);
+    const setup = await authed(t.accessToken).post('/auth/mfa/setup');
+    expect(setup.status).toBe(200);
+    expect((await authed(t.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret) })).status).toBe(200);
+
+    // A fresh (pre-MFA) session may not rotate the authenticator secret.
+    const again = await loginAs(victim);
+    expect(again.mfaRequired).toBe(true);
+    const denied = await authed(again.accessToken).post('/auth/mfa/setup');
+    expect(denied.status).toBe(403);
+    expect((await prisma.userProfile.findUniqueOrThrow({ where: { id: victim.id } })).mfaSecret).toBe(setup.body.secret);
+
+    // Five wrong codes lock the account; the right code is then refused with the same message.
+    const wrong = String((Number(totpCode(setup.body.secret)) + 7) % 1_000_000).padStart(6, '0');
+    for (let i = 0; i < 5; i++) expect((await authed(again.accessToken).post('/auth/mfa/verify').send({ code: wrong })).status).toBe(403);
+    const locked = await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret) });
+    expect(locked.status).toBe(403);
+    expect(locked.body.message).toBe('Invalid verification code');
+    const u1 = await prisma.userProfile.findUniqueOrThrow({ where: { id: victim.id } });
+    expect(u1.lockedUntil).not.toBeNull();
+
+    // Attempts while locked (password or code) do not move lockedUntil.
+    await request(testApp()).post('/auth/login').send({ email: victim.email, password: 'bad-password-xx' });
+    await authed(again.accessToken).post('/auth/mfa/verify').send({ code: wrong });
+    const u2 = await prisma.userProfile.findUniqueOrThrow({ where: { id: victim.id } });
+    expect(u2.lockedUntil!.getTime()).toBe(u1.lockedUntil!.getTime());
+    expect(u2.failedLogins).toBe(u1.failedLogins);
+
+    // Once the lock passes, a verified session may re-enroll.
+    await prisma.userProfile.update({ where: { id: victim.id }, data: { lockedUntil: null, failedLogins: 0 } });
+    const verified = await authed(again.accessToken).post('/auth/mfa/verify').send({ code: totpCode(setup.body.secret) });
+    expect(verified.status).toBe(200);
+    expect((await authed(verified.body.accessToken).post('/auth/mfa/setup')).status).toBe(200);
+  });
+
   it('validation errors carry fieldErrors and requestId', async () => {
     const res = await request(testApp()).post('/auth/login').send({ email: 'not-an-email', password: 'x' });
     expect(res.status).toBe(400);
