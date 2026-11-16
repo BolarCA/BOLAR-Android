@@ -46,6 +46,23 @@ describe('tenant-scoped client', () => {
   });
 });
 
+describe('tenant-scoped client inside a transaction', () => {
+  it('sees its own uncommitted rows and scopes updateManyAndReturn', async () => {
+    const orgA = (await prisma.tenantOrg.findFirstOrThrow({ where: { slug: 'acme-a' } })).id;
+    const orgB = (await prisma.tenantOrg.findFirstOrThrow({ where: { slug: 'acme-b' } })).id;
+    const seen = await prisma.$transaction(async (tx) => {
+      const a = forTenant(prisma, orgA, { tx });
+      await a.property.create({ data: { name: 'In Tx', addressLine1: 'tx', city: 'Austin', state: 'TX', postalCode: '1' } as never });
+      return a.property.count({ where: { name: 'In Tx' } });
+    });
+    expect(seen).toBe(1);
+    await prisma.property.create({ data: { tenantOrgId: orgB, name: 'In Tx', addressLine1: 'b', city: 'Austin', state: 'TX', postalCode: '1' } });
+    const rows = await forTenant(prisma, orgA).property.updateManyAndReturn({ where: { name: 'In Tx' }, data: { name: 'Renamed' } });
+    expect(rows.map((r) => r.tenantOrgId)).toEqual([orgA]);
+    expect(await prisma.property.count({ where: { tenantOrgId: orgB, name: 'In Tx' } })).toBe(1);
+  });
+});
+
 describe('audit log is append-only', () => {
   it('rejects UPDATE and DELETE via trigger', async () => {
     const log = await prisma.auditLog.create({ data: { action: 'test', resourceType: 'test', requestId: 'r1' } });

@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'not_found'
   | 'conflict'
   | 'idempotency_conflict'
+  | 'idempotency_in_progress'
   | 'rate_limited'
   | 'invalid_transition'
   | 'legal_hold'

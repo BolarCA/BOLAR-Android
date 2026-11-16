@@ -63,15 +63,32 @@ describe('auth (Day 9)', () => {
     expect((await authed('garbage.token.here').get('/me')).status).toBe(401);
   });
 
-  it('rotates refresh tokens and rejects reuse of the old one', async () => {
+  it('rotates refresh tokens; reusing the replaced token revokes the whole session (theft detection)', async () => {
     const first = await loginAs(fx.admins.a);
     const r1 = await request(testApp()).post('/auth/refresh').send({ refreshToken: first.refreshToken });
     expect(r1.status).toBe(200);
     expect(r1.body.refreshToken).not.toBe(first.refreshToken);
+    expect((await authed(r1.body.accessToken).get('/me')).status).toBe(200);
     const reuse = await request(testApp()).post('/auth/refresh').send({ refreshToken: first.refreshToken });
     expect(reuse.status).toBe(401);
-    const me = await authed(r1.body.accessToken).get('/me');
-    expect(me.status).toBe(200);
+    // the live session (and its fresh refresh token) is revoked and the event is audited
+    expect((await authed(r1.body.accessToken).get('/me')).status).toBe(401);
+    expect((await request(testApp()).post('/auth/refresh').send({ refreshToken: r1.body.refreshToken })).status).toBe(401);
+    expect(await prisma.auditLog.count({ where: { action: 'auth.refresh_reuse_detected' } })).toBeGreaterThanOrEqual(1);
+  });
+
+  it('refresh is refused for a suspended org or a locked user', async () => {
+    const u = await createUser(fx.a, 'tenant', 'refresh-checks@alpha.test');
+    const t = await loginAs(u);
+    await prisma.userProfile.update({ where: { id: u.id }, data: { lockedUntil: new Date(Date.now() + 60_000) } });
+    expect((await request(testApp()).post('/auth/refresh').send({ refreshToken: t.refreshToken })).status).toBe(401);
+    await prisma.userProfile.update({ where: { id: u.id }, data: { lockedUntil: null } });
+    await prisma.tenantOrg.update({ where: { id: fx.a.id }, data: { status: 'suspended' } });
+    try {
+      expect((await request(testApp()).post('/auth/refresh').send({ refreshToken: t.refreshToken })).status).toBe(401);
+    } finally {
+      await prisma.tenantOrg.update({ where: { id: fx.a.id }, data: { status: 'active' } });
+    }
   });
 
   it('logout revokes the session so the access token stops working', async () => {

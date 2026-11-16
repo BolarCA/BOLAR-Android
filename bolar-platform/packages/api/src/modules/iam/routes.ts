@@ -115,7 +115,14 @@ export const iamRoutes = [
     request: { body: acceptInvitation }, responses: { 200: okSchema.extend({ orgSlug: z.string(), email: z.string() }) },
     handler: async ({ body, ctx }) => {
       const inv = await prisma.invitation.findUnique({ where: { tokenHash: hashToken(body.token) }, include: { tenantOrg: true } });
-      if (!inv || inviteStatus(inv) !== 'pending') throw errors.notFound('Invitation is invalid or expired');
+      if (!inv || inviteStatus(inv) !== 'pending' || inv.tenantOrg.status !== 'active') throw errors.notFound('Invitation is invalid or expired');
+      // An invitation only ever creates an account or completes a placeholder in `invited` status; it must never reset
+      // the password of an account that is already active (review finding 8).
+      const current = await prisma.userProfile.findUnique({ where: { tenantOrgId_email: { tenantOrgId: inv.tenantOrgId, email: inv.email } }, select: { id: true, status: true } });
+      if (current && current.status !== 'invited') {
+        await audit({ ...ctx, tenantOrgId: inv.tenantOrgId }, { action: 'invitation.accept_refused', resourceType: 'invitation', resourceId: inv.id, outcome: 'deny', metadata: { reason: 'account_exists', userId: current.id } });
+        throw errors.conflict('An account already exists for this email; sign in instead');
+      }
       const passwordHash = await hashPassword(body.password);
       const user = await prisma.userProfile.upsert({
         where: { tenantOrgId_email: { tenantOrgId: inv.tenantOrgId, email: inv.email } },

@@ -77,6 +77,8 @@ model UserProfile {
   lastLoginAt    DateTime?
   failedLogins   Int       @default(0)
   lockedUntil    DateTime?
+  /** TOTP time step of the last accepted code; a code is never accepted twice (replay guard). */
+  mfaLastUsedStep Int?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -108,6 +110,8 @@ model Session {
   tenantOrgId      String
   userId           String
   refreshTokenHash String    @unique
+  /** Hash of the refresh token this one replaced; presenting it again means the token was stolen and the session is revoked. */
+  prevRefreshTokenHash String?
   mfaVerified      Boolean   @default(false)
   ip               String?
   userAgent        String?
@@ -120,6 +124,7 @@ model Session {
 
   @@index([tenantOrgId, userId])
   @@index([expiresAt])
+  @@index([prevRefreshTokenHash])
 }
 
 model SupportSession {

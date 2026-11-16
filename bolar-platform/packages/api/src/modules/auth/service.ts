@@ -28,12 +28,12 @@ async function recordFailedAttempt(user: { id: string; failedLogins: number; loc
 
 export interface IssuedTokens { accessToken: string; refreshToken: string; expiresIn: number; tokenType: 'Bearer'; mfaRequired: boolean }
 
-async function issueTokens(user: { id: string; tenantOrgId: string; isPlatform: boolean; mfaEnabled: boolean }, ctx: RequestContext, mfaVerified: boolean, existingSessionId?: string): Promise<{ tokens: IssuedTokens; sessionId: string }> {
+async function issueTokens(user: { id: string; tenantOrgId: string; isPlatform: boolean; mfaEnabled: boolean }, ctx: RequestContext, mfaVerified: boolean, existing?: { id: string; refreshTokenHash: string }): Promise<{ tokens: IssuedTokens; sessionId: string }> {
   const cfg = config();
   const refresh = newOpaqueToken();
   const expiresAt = new Date(Date.now() + cfg.AUTH_REFRESH_TTL_SECONDS * 1000);
-  const session = existingSessionId
-    ? await prisma.session.update({ where: { id: existingSessionId }, data: { refreshTokenHash: hashToken(refresh), expiresAt, lastUsedAt: new Date(), mfaVerified } })
+  const session = existing
+    ? await prisma.session.update({ where: { id: existing.id }, data: { refreshTokenHash: hashToken(refresh), prevRefreshTokenHash: existing.refreshTokenHash, expiresAt, lastUsedAt: new Date(), mfaVerified } })
     : await prisma.session.create({ data: { tenantOrgId: user.tenantOrgId, userId: user.id, refreshTokenHash: hashToken(refresh), expiresAt, ip: ctx.ip, userAgent: ctx.userAgent, mfaVerified } });
   const accessToken = await signAccessToken({ sub: user.id, org: user.tenantOrgId, sid: session.id, mfa: mfaVerified, plat: user.isPlatform });
   return { tokens: { accessToken, refreshToken: refresh, expiresIn: cfg.AUTH_ACCESS_TTL_SECONDS, tokenType: 'Bearer', mfaRequired: user.mfaEnabled && !mfaVerified }, sessionId: session.id };
@@ -70,14 +70,33 @@ export async function login(ctx: RequestContext, input: { email: string; passwor
   return { ...tokens, user: { id: user.id, email: user.email, name: user.name }, org: { id: user.tenantOrg.id, slug: user.tenantOrg.slug, name: user.tenantOrg.name } };
 }
 
-/** Refresh rotates the refresh token (reuse of an old token revokes the session). */
+/**
+ * Refresh rotates the refresh token. Presenting the token that the current one replaced is treated as theft: that
+ * session is revoked and audited (`auth.refresh_reuse_detected`). A suspended org or a locked/inactive user cannot
+ * refresh, so suspension and lockout take effect within the access-token TTL rather than the 14-day refresh TTL.
+ */
 export async function refresh(ctx: RequestContext, refreshToken: string) {
-  const session = await prisma.session.findUnique({ where: { refreshTokenHash: hashToken(refreshToken) }, include: { user: true } });
-  if (!session || session.revokedAt || session.expiresAt < new Date() || session.user.status !== 'active') {
-    await audit(ctx, { action: 'auth.refresh_failed', resourceType: 'session', outcome: 'deny' });
+  const hash = hashToken(refreshToken);
+  const fail = async (reason: string, sessionId?: string) => {
+    await audit(ctx, { action: 'auth.refresh_failed', resourceType: 'session', resourceId: sessionId ?? null, outcome: 'deny', metadata: { reason } });
     throw errors.unauthenticated('Session expired; please sign in again');
+  };
+  const session = await prisma.session.findUnique({ where: { refreshTokenHash: hash }, include: { user: { include: { tenantOrg: { select: { status: true } } } } } });
+  if (!session) {
+    const reused = await prisma.session.findFirst({ where: { prevRefreshTokenHash: hash, revokedAt: null }, select: { id: true, userId: true, tenantOrgId: true } });
+    if (reused) {
+      await prisma.session.update({ where: { id: reused.id }, data: { revokedAt: new Date() } });
+      invalidateSessionCache(reused.id);
+      await audit({ ...ctx, tenantOrgId: reused.tenantOrgId }, { action: 'auth.refresh_reuse_detected', resourceType: 'session', resourceId: reused.id, outcome: 'deny', metadata: { userId: reused.userId } });
+      logger.warn({ requestId: ctx.requestId, sessionId: reused.id }, 'refresh token reuse detected; session revoked');
+    }
+    return fail(reused ? 'reuse' : 'unknown_token', reused?.id);
   }
-  const { tokens } = await issueTokens(session.user, ctx, session.mfaVerified, session.id);
+  if (session.revokedAt || session.expiresAt < new Date()) return fail('expired', session.id);
+  if (session.user.status !== 'active') return fail('user_inactive', session.id);
+  if (session.user.tenantOrg.status !== 'active') return fail('org_inactive', session.id);
+  if (isLocked(session.user)) return fail('locked', session.id);
+  const { tokens } = await issueTokens(session.user, ctx, session.mfaVerified, { id: session.id, refreshTokenHash: session.refreshTokenHash });
   return tokens;
 }
 
@@ -127,7 +146,8 @@ export async function mfaVerify(ctx: RequestContext, sessionId: string, code: st
   }
   await prisma.userProfile.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, ...(user.mfaEnabled ? {} : { mfaEnabled: true }) } });
   await prisma.session.update({ where: { id: sessionId }, data: { mfaVerified: true } });
-  const { tokens } = await issueTokens({ ...user, mfaEnabled: true }, ctx, true, sessionId);
+  const current = await prisma.session.findUniqueOrThrow({ where: { id: sessionId }, select: { id: true, refreshTokenHash: true } });
+  const { tokens } = await issueTokens({ ...user, mfaEnabled: true }, ctx, true, current);
   await audit(ctx, { action: 'auth.mfa_verified', resourceType: 'session', resourceId: sessionId });
   return tokens;
 }

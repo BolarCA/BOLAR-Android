@@ -34,6 +34,21 @@ describe('iam: invitations, roles, relationships, access check (Days 11-13)', ()
     expect(revoke.status).toBe(409);
   });
 
+  it('accepting an invitation never overwrites an account that became active in the meantime', async () => {
+    const a = await asUser(fx.admins.a);
+    const inv = await a.post('/invitations').send({ email: 'raced@alpha.test', role: 'tenant' });
+    expect(inv.status).toBe(201);
+    const token = new URL(inv.body.acceptUrl).searchParams.get('token')!;
+    const existing = await createUser(fx.a, 'tenant', 'raced@alpha.test');
+    const before = await prisma.userProfile.findUniqueOrThrow({ where: { id: existing.id } });
+    const accept = await request(testApp()).post('/invitations/accept').send({ token, name: 'Impostor', password: 'LongEnoughPassword1!' });
+    expect(accept.status).toBe(409);
+    const after = await prisma.userProfile.findUniqueOrThrow({ where: { id: existing.id } });
+    expect(after.passwordHash).toBe(before.passwordHash);
+    expect(after.name).toBe(before.name);
+    expect(await prisma.auditLog.count({ where: { action: 'invitation.accept_refused' } })).toBeGreaterThanOrEqual(1);
+  });
+
   it('tenant role cannot invite or read users (denied path)', async () => {
     const tenant = await createUser(fx.a, 'tenant');
     const t = await asUser(tenant);
